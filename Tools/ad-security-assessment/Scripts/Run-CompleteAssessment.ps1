@@ -127,7 +127,7 @@ if (Test-Path $sharpHoundPath) {
 } else {
     Write-Host "  WARNING: SharpHound.exe not found at $sharpHoundPath" -ForegroundColor Yellow
     Write-Host "  BloodHound analysis will be skipped" -ForegroundColor Gray
-    Write-Host "  Download from: https://github.com/BloodHoundAD/BloodHound/releases" -ForegroundColor Gray
+    Write-Host "  Download from: https://github.com/SpecterOps/BloodHound/releases" -ForegroundColor Gray
     $SkipBloodHound = $true
 }
 

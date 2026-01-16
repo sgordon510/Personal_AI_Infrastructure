@@ -84,7 +84,7 @@ $azureADData | ConvertTo-Json | Out-File azure-ad-data.json
 
 **Run SharpHound:**
 ```powershell
-# Download SharpHound from https://github.com/BloodHoundAD/SharpHound
+# Download SharpHound from https://github.com/SpecterOps/BloodHound/releases
 .\SharpHound.exe -c All --outputdirectory C:\Temp\bloodhound
 
 # Output files:

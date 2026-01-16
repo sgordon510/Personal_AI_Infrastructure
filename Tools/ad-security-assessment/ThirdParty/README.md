@@ -9,9 +9,11 @@ This directory should contain the external security tools used by the assessment
 **What it does:** Collects Active Directory attack path data for analysis
 
 **Download:**
-1. Visit: https://github.com/BloodHoundAD/BloodHound/releases
+1. Visit: https://github.com/SpecterOps/BloodHound/releases
 2. Download the latest `SharpHound-vX.X.X.zip`
 3. Extract `SharpHound.exe` to this directory
+
+**Note:** This is the current official BloodHound maintained by SpecterOps. The legacy BloodHoundAD version is no longer maintained.
 
 **File location after download:**
 ```
@@ -53,19 +55,19 @@ ThirdParty/
 └── PingCastle.exe
 ```
 
-## Tool Versions (Tested)
+## Tool Versions
 
-- **SharpHound:** v2.5.0 or later
+- **SharpHound:** Use the latest version from SpecterOps (v2.5.0+)
 - **PingCastle:** v3.3.0.0 or later
 
-Newer versions should work, but these are the minimum tested versions.
+**Important:** Always download the latest version of SharpHound from the SpecterOps repository. The tool is actively maintained and receives regular updates for new attack techniques and compatibility improvements.
 
 ## Security Notes
 
 ⚠️ **Important:**
 
 1. **Download from official sources only**
-   - SharpHound: Only from GitHub BloodHoundAD releases
+   - SharpHound: Only from GitHub SpecterOps/BloodHound releases
    - PingCastle: Only from pingcastle.com
 
 2. **Verify file integrity**
@@ -122,9 +124,10 @@ This will run only the AD and Azure AD assessments without third-party tools.
 
 ## Support
 
-**SharpHound Support:**
-- GitHub Issues: https://github.com/BloodHoundAD/BloodHound/issues
-- Documentation: https://bloodhound.readthedocs.io/
+**BloodHound/SharpHound Support:**
+- GitHub Issues: https://github.com/SpecterOps/BloodHound/issues
+- Documentation: https://support.bloodhoundenterprise.io/
+- Legacy Docs: https://bloodhound.readthedocs.io/ (for reference only)
 
 **PingCastle Support:**
 - Website: https://www.pingcastle.com/
