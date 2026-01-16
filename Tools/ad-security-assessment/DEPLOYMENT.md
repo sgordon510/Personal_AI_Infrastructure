@@ -102,7 +102,73 @@ git clone https://github.com/yourorg/ad-security-assessment C:\SecurityAssessmen
 1. Copy entire `ad-security-assessment-standalone/` directory
 2. Place at `C:\SecurityAssessment\`
 
-### Step 4: Verify Directory Structure
+### Step 4: Download Third-Party Security Tools (Recommended)
+
+For comprehensive security analysis, download these additional tools:
+
+#### BloodHound (SharpHound.exe) - Attack Path Analysis
+
+**What it does:** Identifies attack paths and privilege escalation opportunities in Active Directory
+
+**Download Steps:**
+1. Open your web browser and go to: **https://github.com/SpecterOps/BloodHound/releases**
+2. Find the latest release (look for the green "Latest" tag)
+3. Scroll down to "Assets" section
+4. Download the file named `SharpHound-vX.X.X.zip` (e.g., `SharpHound-v2.5.0.zip`)
+5. Extract the ZIP file
+6. Copy `SharpHound.exe` to: `C:\SecurityAssessment\ThirdParty\`
+
+**Verification:**
+```powershell
+cd C:\SecurityAssessment\ThirdParty
+.\SharpHound.exe --help
+```
+
+You should see usage information without errors.
+
+#### PingCastle - Comprehensive AD Security Audit
+
+**What it does:** Performs automated Active Directory security risk assessment with scoring
+
+**Download Steps:**
+1. Open your web browser and go to: **https://www.pingcastle.com/download/**
+2. Click the download button for the latest version
+3. Extract the downloaded ZIP file
+4. Copy `PingCastle.exe` to: `C:\SecurityAssessment\ThirdParty\`
+
+**Verification:**
+```powershell
+cd C:\SecurityAssessment\ThirdParty
+.\PingCastle.exe --help
+```
+
+You should see usage information without errors.
+
+#### After Download
+
+Your `ThirdParty` folder should contain:
+```
+C:\SecurityAssessment\ThirdParty\
+├── README.md
+├── SharpHound.exe
+└── PingCastle.exe
+```
+
+**Important Security Notes:**
+- Only download from the official sources listed above
+- Windows Defender may flag these as suspicious (they are legitimate security tools)
+- If blocked, add an exception: `Add-MpPreference -ExclusionPath "C:\SecurityAssessment\ThirdParty"`
+- These tools should only be used on networks you own or have authorization to test
+
+**Skip if not available:**
+If you cannot download these tools, you can still run the assessment without them:
+```powershell
+.\Run-CompleteAssessment.ps1 -SkipBloodHound -SkipPingCastle
+```
+
+For complete download instructions and troubleshooting, see: `ThirdParty/README.md`
+
+### Step 5: Verify Directory Structure
 
 After copying, you should have:
 
@@ -113,6 +179,7 @@ C:\SecurityAssessment\
 │   ├── assess-standalone.sh (Bash launcher)
 │   ├── Export-ADData.ps1 (AD data collection)
 │   ├── Export-AzureADData.ps1 (Azure AD collection)
+│   ├── Run-CompleteAssessment.ps1 (Master script)
 │   └── run-production-assessment.sh
 ├── Tools/
 │   ├── AssessADMisconfigs.ts
@@ -122,6 +189,10 @@ C:\SecurityAssessment\
 │   ├── ParsePingCastle.ts
 │   ├── GenerateExecutiveReport.ts
 │   └── RunFullAssessment.ts
+├── ThirdParty/
+│   ├── README.md (Download instructions)
+│   ├── SharpHound.exe (Download from SpecterOps)
+│   └── PingCastle.exe (Download from pingcastle.com)
 ├── Findings/
 │   ├── ADFindings.md
 │   └── AzureFindings.md

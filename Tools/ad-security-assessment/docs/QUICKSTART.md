@@ -24,6 +24,50 @@ Before starting, ensure you have:
 
 ---
 
+## Step 0: Download Third-Party Tools (First Time Setup)
+
+For the most comprehensive assessment, download these security tools before collecting data:
+
+### BloodHound (SharpHound.exe)
+
+**What it does:** Identifies attack paths and privilege escalation opportunities
+
+**Download:**
+1. Visit: **https://github.com/SpecterOps/BloodHound/releases**
+2. Find the latest release (green "Latest" tag)
+3. Download `SharpHound-vX.X.X.zip` from the Assets section
+4. Extract and place `SharpHound.exe` in: `C:\SecurityAssessment\ThirdParty\`
+
+**Verify:**
+```powershell
+cd C:\SecurityAssessment\ThirdParty
+.\SharpHound.exe --help
+```
+
+### PingCastle
+
+**What it does:** Comprehensive AD security audit with risk scoring
+
+**Download:**
+1. Visit: **https://www.pingcastle.com/download/**
+2. Download the latest version
+3. Extract and place `PingCastle.exe` in: `C:\SecurityAssessment\ThirdParty\`
+
+**Verify:**
+```powershell
+cd C:\SecurityAssessment\ThirdParty
+.\PingCastle.exe --help
+```
+
+**Complete Instructions:** See [../ThirdParty/README.md](../ThirdParty/README.md) for detailed setup and troubleshooting.
+
+**Skip if needed:** You can run the assessment without these tools using:
+```powershell
+.\Run-CompleteAssessment.ps1 -SkipBloodHound -SkipPingCastle
+```
+
+---
+
 ## Step 1: Collect Active Directory Data
 
 On a domain-joined Windows system with appropriate permissions:

@@ -13,9 +13,44 @@ Automated security assessment that:
 - ✅ Generates executive dashboards with security scores
 - ✅ Provides detailed remediation guidance
 
+## Prerequisites
+
+### Required Software
+
+- **Windows 10/11** or **Windows Server 2016+** (domain-joined)
+- **Bun Runtime** - JavaScript/TypeScript runtime for assessment tools
+- **PowerShell 5.1+** - For data collection scripts
+- **Active Directory PowerShell Module** - For AD data collection
+- **Domain Admin permissions** - Required for comprehensive data collection
+
+### Recommended Third-Party Tools
+
+For the most comprehensive assessment, download these additional security tools:
+
+#### 🩸 BloodHound (SharpHound.exe)
+- **Purpose:** Attack path analysis and privilege escalation detection
+- **Download:** https://github.com/SpecterOps/BloodHound/releases
+- **Place at:** `ThirdParty/SharpHound.exe`
+- **Details:** See `ThirdParty/README.md` for complete download instructions
+
+#### 🏰 PingCastle
+- **Purpose:** Automated AD security risk scoring
+- **Download:** https://www.pingcastle.com/download/
+- **Place at:** `ThirdParty/PingCastle.exe`
+- **Details:** See `ThirdParty/README.md` for complete download instructions
+
+**Note:** The assessment will run without these tools, but they provide valuable additional security insights. See [ThirdParty/README.md](ThirdParty/README.md) for detailed setup instructions.
+
+### Optional Software
+
+- **Microsoft Graph PowerShell Module** - For Azure AD assessment
+- **WSL or Git Bash** - For running Bash scripts on Windows
+
+---
+
 ## Quick Start
 
-### 1. Prerequisites (One-Time Setup)
+### 1. Install Prerequisites
 
 ```powershell
 # Install Bun runtime
@@ -28,7 +63,17 @@ Add-WindowsCapability -Online -Name 'Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.
 Install-Module Microsoft.Graph -Scope CurrentUser
 ```
 
-### 2. Collect Data
+### 2. Download Third-Party Tools (Recommended)
+
+For comprehensive analysis, download BloodHound and PingCastle:
+
+1. **Download SharpHound:** Visit https://github.com/SpecterOps/BloodHound/releases
+2. **Download PingCastle:** Visit https://www.pingcastle.com/download/
+3. **Place both** in the `ThirdParty/` folder
+
+**Complete instructions:** See [ThirdParty/README.md](ThirdParty/README.md)
+
+### 3. Collect Data
 
 ```powershell
 # Collect AD data (run as Domain Admin)
@@ -38,7 +83,7 @@ Install-Module Microsoft.Graph -Scope CurrentUser
 .\Scripts\Export-AzureADData.ps1 -OutputPath .\data
 ```
 
-### 3. Run Assessment
+### 4. Run Assessment
 
 **Windows:**
 ```batch
@@ -50,7 +95,7 @@ Scripts\assess.bat
 bash Scripts/assess-standalone.sh
 ```
 
-### 4. View Results
+### 5. View Results
 
 Open `reports/[timestamp]/executive-report.html` in your browser.
 
