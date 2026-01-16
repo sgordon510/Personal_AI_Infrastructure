@@ -1,198 +1,302 @@
 # Export-ADData.ps1
 # Exports Active Directory configuration for security assessment
 # Requires: Domain Admin or equivalent read access
+#
+# BEGINNER'S GUIDE:
+# 1. Right-click PowerShell and select "Run as Administrator"
+# 2. Navigate to this script's location: cd C:\SecurityAssessment\Scripts
+# 3. Run: .\Export-ADData.ps1 -OutputPath C:\SecurityAssessment\data
+# 4. Wait for completion (may take 5-30 minutes depending on environment size)
 
 param(
-    [string]$OutputPath = "C:\Temp\ADAssessment",
+    [Parameter(HelpMessage="Where to save the exported data files")]
+    [string]$OutputPath = "C:\SecurityAssessment\data",
+
+    [Parameter(HelpMessage="Include ACL data (slower but more comprehensive)")]
     [switch]$IncludeACLs = $false
 )
 
-# Create output directory
+# Create output directory if it doesn't exist
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "  AD Security Assessment Data Export" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Output Location: $OutputPath`n" -ForegroundColor Yellow
+
 New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
 
-Write-Host "`n=== AD Security Assessment Data Export ===" -ForegroundColor Cyan
-Write-Host "Output: $OutputPath`n" -ForegroundColor Yellow
-
+# Check for Active Directory module
+Write-Host "[Step 1/5] Checking prerequisites..." -ForegroundColor Green
 try {
     Import-Module ActiveDirectory -ErrorAction Stop
-} catch {
-    Write-Error "Active Directory module not found. Run on domain-joined system with RSAT installed."
+    Write-Host "  SUCCESS: Active Directory module loaded" -ForegroundColor Green
+}
+catch {
+    Write-Host "`n  ERROR: Active Directory module not found!" -ForegroundColor Red
+    Write-Host "  This script must be run on a domain-joined Windows computer" -ForegroundColor Yellow
+    Write-Host "  with RSAT (Remote Server Administration Tools) installed.`n" -ForegroundColor Yellow
+    Write-Host "  To install RSAT on Windows 10/11:" -ForegroundColor Cyan
+    Write-Host "  1. Open Settings > Apps > Optional Features" -ForegroundColor White
+    Write-Host "  2. Click 'Add a feature'" -ForegroundColor White
+    Write-Host "  3. Search for 'RSAT: Active Directory'" -ForegroundColor White
+    Write-Host "  4. Install and restart PowerShell`n" -ForegroundColor White
     exit 1
 }
 
-# === 1. AD CONFIGURATION ===
-Write-Host "[1/4] Exporting AD Configuration..." -ForegroundColor Green
-
+# Get domain information
 $domain = Get-ADDomain
+Write-Host "  Domain: $($domain.DNSRoot)" -ForegroundColor Cyan
+
+# === SECTION 1: AD CONFIGURATION ===
+Write-Host "`n[Step 2/5] Collecting AD Configuration..." -ForegroundColor Green
+
 $adConfig = @{
     domain = $domain.DNSRoot
     collectionDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
-    # Password Policy
-    passwordPolicy = Get-ADDefaultDomainPasswordPolicy | Select-Object `
-        @{Name='minimumPasswordLength';Expression={$_.MinPasswordLength}},
-        @{Name='passwordComplexity';Expression={$_.ComplexityEnabled}},
-        @{Name='lockoutThreshold';Expression={$_.LockoutThreshold}},
-        @{Name='maximumPasswordAge';Expression={$_.MaxPasswordAge.Days}},
-        @{Name='minimumPasswordAge';Expression={$_.MinPasswordAge.Days}}
-
-    # LDAP Settings (requires checking on DCs)
-    ldapSettings = @{
-        ldapSigning = $null  # Set manually after checking
-        channelBinding = $null
-        ssl = $null
-    }
-
-    # Domain Controllers
-    domainControllers = Get-ADDomainController -Filter * | ForEach-Object {
-        try {
-            $hotfix = Get-HotFix -ComputerName $_.HostName |
-                      Sort-Object InstalledOn -Descending |
-                      Select-Object -First 1
-            $lastPatch = if ($hotfix) { $hotfix.InstalledOn.ToString("yyyy-MM-dd") } else { "Unknown" }
-        } catch {
-            $lastPatch = "Unable to query"
-        }
-
-        @{
-            hostname = $_.HostName
-            osVersion = $_.OperatingSystem
-            lastPatchDate = $lastPatch
-        }
-    }
-
-    # Service Accounts (accounts with SPNs)
-    serviceAccounts = Get-ADUser -Filter {ServicePrincipalName -like "*"} -Properties `
-        ServicePrincipalName, PasswordLastSet, DoesNotRequirePreAuth, AdminCount, Enabled |
-        Where-Object {$_.Enabled} |
-        Select-Object `
-            @{Name='name';Expression={$_.SamAccountName}},
-            @{Name='passwordLastSet';Expression={$_.PasswordLastSet.ToString("yyyy-MM-dd")}},
-            @{Name='kerberosPreAuthRequired';Expression={-not $_.DoesNotRequirePreAuth}},
-            AdminCount
+    passwordPolicy = $null
+    ldapSettings = @{}
+    domainControllers = @()
+    serviceAccounts = @()
 }
 
-# Manually check LDAP settings on a DC
-Write-Host "  Checking LDAP settings on DC..." -ForegroundColor Yellow
+# Password Policy
+Write-Host "  - Reading password policy..." -ForegroundColor Gray
+$pwdPolicy = Get-ADDefaultDomainPasswordPolicy
+$adConfig.passwordPolicy = @{
+    minimumPasswordLength = $pwdPolicy.MinPasswordLength
+    passwordComplexity = $pwdPolicy.ComplexityEnabled
+    lockoutThreshold = $pwdPolicy.LockoutThreshold
+    maximumPasswordAge = $pwdPolicy.MaxPasswordAge.Days
+    minimumPasswordAge = $pwdPolicy.MinPasswordAge.Days
+    passwordHistoryCount = $pwdPolicy.PasswordHistoryCount
+}
+
+# LDAP Settings (attempt to read from DC registry)
+Write-Host "  - Checking LDAP security settings..." -ForegroundColor Gray
 try {
     $dc = (Get-ADDomainController).HostName
     $ldapReg = Invoke-Command -ComputerName $dc -ScriptBlock {
         Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters" -Name "LDAPServerIntegrity" -ErrorAction SilentlyContinue
-    }
+    } -ErrorAction Stop
+
     $adConfig.ldapSettings.ldapSigning = ($ldapReg.LDAPServerIntegrity -eq 2)
-} catch {
-    Write-Warning "  Unable to query LDAP settings remotely"
+    Write-Host "    LDAP Signing: $($adConfig.ldapSettings.ldapSigning)" -ForegroundColor Cyan
+}
+catch {
+    Write-Host "    WARNING: Could not query LDAP settings remotely" -ForegroundColor Yellow
+    $adConfig.ldapSettings.ldapSigning = $null
 }
 
-$adConfig | ConvertTo-Json -Depth 10 | Out-File "$OutputPath\ad-config.json" -Encoding UTF8
-Write-Host "  ✓ Saved: ad-config.json" -ForegroundColor Green
+$adConfig.ldapSettings.channelBinding = $null  # Requires manual verification
+$adConfig.ldapSettings.ssl = $null  # Requires manual verification
 
-# === 2. IDENTITY & PRIVILEGE DATA ===
-Write-Host "`n[2/4] Exporting Identity & Privilege Data..." -ForegroundColor Green
+# Domain Controllers
+Write-Host "  - Scanning domain controllers..." -ForegroundColor Gray
+$dcs = Get-ADDomainController -Filter *
+foreach ($dc in $dcs) {
+    Write-Host "    Found: $($dc.HostName)" -ForegroundColor Gray
+
+    # Try to get last patch date
+    try {
+        $hotfixes = Get-HotFix -ComputerName $dc.HostName -ErrorAction Stop |
+                    Sort-Object InstalledOn -Descending |
+                    Select-Object -First 1
+        $lastPatch = if ($hotfixes) { $hotfixes.InstalledOn.ToString("yyyy-MM-dd") } else { "Unknown" }
+    }
+    catch {
+        $lastPatch = "Unable to query"
+    }
+
+    $adConfig.domainControllers += @{
+        hostname = $dc.HostName
+        ipAddress = $dc.IPv4Address
+        osVersion = $dc.OperatingSystem
+        lastPatchDate = $lastPatch
+        isGlobalCatalog = $dc.IsGlobalCatalog
+    }
+}
+
+# Service Accounts (accounts with SPNs)
+Write-Host "  - Identifying service accounts..." -ForegroundColor Gray
+$svcAccts = Get-ADUser -Filter {ServicePrincipalName -like "*"} -Properties `
+    ServicePrincipalName, PasswordLastSet, DoesNotRequirePreAuth, AdminCount, Enabled |
+    Where-Object {$_.Enabled}
+
+foreach ($acct in $svcAccts) {
+    $adConfig.serviceAccounts += @{
+        name = $acct.SamAccountName
+        distinguishedName = $acct.DistinguishedName
+        servicePrincipalNames = @($acct.ServicePrincipalName)
+        passwordLastSet = if ($acct.PasswordLastSet) { $acct.PasswordLastSet.ToString("yyyy-MM-dd") } else { "Never" }
+        kerberosPreAuthRequired = -not $acct.DoesNotRequirePreAuth
+        isPrivileged = ($acct.AdminCount -eq 1)
+    }
+}
+
+# Save AD config
+$adConfig | ConvertTo-Json -Depth 10 | Out-File "$OutputPath\ad-config.json" -Encoding UTF8
+Write-Host "  SUCCESS: Saved ad-config.json" -ForegroundColor Green
+
+# === SECTION 2: IDENTITY AND PRIVILEGE DATA ===
+Write-Host "`n[Step 3/5] Collecting Identity and Privilege Data..." -ForegroundColor Green
 
 $identityData = @{
     collectionDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-
-    # All user accounts
-    accounts = Get-ADUser -Filter * -Properties `
-        MemberOf, LastLogonDate, PasswordLastSet, AdminCount, ServicePrincipalName, Enabled, Description |
-        Select-Object `
-            SamAccountName,
-            DistinguishedName,
-            @{Name='memberOf';Expression={$_.MemberOf}},
-            @{Name='lastLogon';Expression={if($_.LastLogonDate){$_.LastLogonDate.ToString("yyyy-MM-dd")}else{$null}}},
-            @{Name='pwdLastSet';Expression={if($_.PasswordLastSet){$_.PasswordLastSet.ToString("yyyy-MM-dd")}else{$null}}},
-            AdminCount,
-            @{Name='servicePrincipalNames';Expression={$_.ServicePrincipalName}},
-            Enabled,
-            Description
-
-    # Privileged groups
-    groups = Get-ADGroup -Filter {
-        Name -like "*Admin*" -or
-        Name -like "*Operator*" -or
-        Name -eq "Enterprise Admins" -or
-        Name -eq "Schema Admins" -or
-        Name -eq "Domain Admins" -or
-        Name -eq "Account Operators" -or
-        Name -eq "Backup Operators" -or
-        Name -eq "Server Operators"
-    } -Properties Members, Description |
-    Select-Object `
-        Name,
-        @{Name='members';Expression={$_.Members}},
-        Description
+    users = @()
+    groups = @()
+    acls = @()
 }
 
-# === 3. OPTIONAL: ACL EXPORT ===
-if ($IncludeACLs) {
-    Write-Host "  Exporting ACLs (this may take a while)..." -ForegroundColor Yellow
+# All user accounts
+Write-Host "  - Enumerating user accounts..." -ForegroundColor Gray
+$users = Get-ADUser -Filter * -Properties `
+    MemberOf, LastLogonDate, PasswordLastSet, AdminCount, ServicePrincipalName, Enabled, Description, whenCreated
 
-    $aclExport = @()
+$totalUsers = $users.Count
+$counter = 0
+
+foreach ($user in $users) {
+    $counter++
+    if ($counter % 100 -eq 0) {
+        Write-Host "    Processing user $counter of $totalUsers..." -ForegroundColor Gray
+    }
+
+    $identityData.users += @{
+        samAccountName = $user.SamAccountName
+        distinguishedName = $user.DistinguishedName
+        memberOf = @($user.MemberOf)
+        lastLogon = if ($user.LastLogonDate) { $user.LastLogonDate.ToString("yyyy-MM-dd") } else { $null }
+        pwdLastSet = if ($user.PasswordLastSet) { $user.PasswordLastSet.ToString("yyyy-MM-dd") } else { $null }
+        adminCount = $user.AdminCount
+        servicePrincipalNames = @($user.ServicePrincipalName)
+        enabled = $user.Enabled
+        description = $user.Description
+        whenCreated = $user.whenCreated.ToString("yyyy-MM-dd")
+    }
+}
+
+Write-Host "  - Found $totalUsers user accounts" -ForegroundColor Cyan
+
+# Privileged groups
+Write-Host "  - Identifying privileged groups..." -ForegroundColor Gray
+$groups = Get-ADGroup -Filter {
+    Name -like "*Admin*" -or
+    Name -like "*Operator*" -or
+    Name -eq "Enterprise Admins" -or
+    Name -eq "Schema Admins" -or
+    Name -eq "Domain Admins" -or
+    Name -eq "Account Operators" -or
+    Name -eq "Backup Operators" -or
+    Name -eq "Server Operators" -or
+    Name -eq "Print Operators" -or
+    Name -eq "Replicator"
+} -Properties Members, Description
+
+foreach ($group in $groups) {
+    $identityData.groups += @{
+        name = $group.Name
+        distinguishedName = $group.DistinguishedName
+        members = @($group.Members)
+        description = $group.Description
+    }
+}
+
+Write-Host "  - Found $($groups.Count) privileged groups" -ForegroundColor Cyan
+
+# === SECTION 3: OPTIONAL ACL EXPORT ===
+if ($IncludeACLs) {
+    Write-Host "  - Exporting ACL data (this may take several minutes)..." -ForegroundColor Yellow
+
     $criticalOUs = @(
         $domain.DistinguishedName,  # Root domain
         "CN=Users,$($domain.DistinguishedName)",
         "OU=Domain Controllers,$($domain.DistinguishedName)"
     )
 
+    $aclCount = 0
     foreach ($ou in $criticalOUs) {
         try {
-            $acl = Get-Acl "AD:$ou"
+            $acl = Get-Acl "AD:$ou" -ErrorAction Stop
             foreach ($access in $acl.Access) {
                 if ($access.ActiveDirectoryRights -match "GenericAll|GenericWrite|WriteDacl|WriteOwner|AddMember") {
-                    $aclExport += @{
+                    $identityData.acls += @{
                         objectDN = $ou
                         trustee = $access.IdentityReference.Value
-                        rights = @($access.ActiveDirectoryRights.ToString())
+                        rights = $access.ActiveDirectoryRights.ToString()
+                        accessControlType = $access.AccessControlType.ToString()
                         isInherited = $access.IsInherited
                     }
+                    $aclCount++
                 }
             }
-        } catch {
-            Write-Warning "  Unable to read ACL for $ou"
+        }
+        catch {
+            Write-Host "    WARNING: Could not read ACL for $ou" -ForegroundColor Yellow
         }
     }
 
-    $identityData.acls = $aclExport
-    Write-Host "  ✓ Exported $($aclExport.Count) ACL entries" -ForegroundColor Green
+    Write-Host "  - Exported $aclCount dangerous ACL entries" -ForegroundColor Cyan
 }
 
-$identityData | ConvertTo-Json -Depth 15 | Out-File "$OutputPath\identity-data.json" -Encoding UTF8
-Write-Host "  ✓ Saved: identity-data.json" -ForegroundColor Green
+# Save identity data
+$identityData | ConvertTo-Json -Depth 15 | Out-File "$OutputPath\ad-identity.json" -Encoding UTF8
+Write-Host "  SUCCESS: Saved ad-identity.json" -ForegroundColor Green
 
-# === 4. STATISTICS ===
-Write-Host "`n[3/4] Generating Statistics..." -ForegroundColor Green
-$stats = @{
-    totalUsers = $identityData.accounts.Count
-    enabledUsers = ($identityData.accounts | Where-Object {$_.Enabled}).Count
-    privilegedGroups = $identityData.groups.Count
-    domainControllers = $adConfig.domainControllers.Count
-    serviceAccounts = $adConfig.serviceAccounts.Count
+# === SECTION 4: STATISTICS ===
+Write-Host "`n[Step 4/5] Generating Statistics..." -ForegroundColor Green
+
+$enabledUsers = ($identityData.users | Where-Object {$_.enabled}).Count
+$disabledUsers = $totalUsers - $enabledUsers
+$privilegedUsers = ($identityData.users | Where-Object {$_.adminCount -eq 1}).Count
+$serviceAcctCount = ($identityData.users | Where-Object {$_.servicePrincipalNames.Count -gt 0}).Count
+
+Write-Host "  Domain: $($domain.DNSRoot)" -ForegroundColor Cyan
+Write-Host "  Total Users: $totalUsers" -ForegroundColor Cyan
+Write-Host "    - Enabled: $enabledUsers" -ForegroundColor White
+Write-Host "    - Disabled: $disabledUsers" -ForegroundColor White
+Write-Host "    - Privileged (AdminCount=1): $privilegedUsers" -ForegroundColor White
+Write-Host "    - Service Accounts (with SPN): $serviceAcctCount" -ForegroundColor White
+Write-Host "  Privileged Groups: $($identityData.groups.Count)" -ForegroundColor Cyan
+Write-Host "  Domain Controllers: $($adConfig.domainControllers.Count)" -ForegroundColor Cyan
+if ($IncludeACLs) {
+    Write-Host "  Dangerous ACL Entries: $($identityData.acls.Count)" -ForegroundColor Cyan
 }
 
-Write-Host "  Users: $($stats.totalUsers) total, $($stats.enabledUsers) enabled" -ForegroundColor Cyan
-Write-Host "  Privileged Groups: $($stats.privilegedGroups)" -ForegroundColor Cyan
-Write-Host "  Domain Controllers: $($stats.domainControllers)" -ForegroundColor Cyan
-Write-Host "  Service Accounts: $($stats.serviceAccounts)" -ForegroundColor Cyan
+# === SECTION 5: SECURE OUTPUT ===
+Write-Host "`n[Step 5/5] Securing Output Files..." -ForegroundColor Green
 
-# === 5. SECURE OUTPUT ===
-Write-Host "`n[4/4] Securing Output Directory..." -ForegroundColor Green
+# Restrict permissions to current user only
 icacls $OutputPath /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F" | Out-Null
-Write-Host "  ✓ Restricted permissions to current user" -ForegroundColor Green
+Write-Host "  SUCCESS: File permissions restricted to $env:USERNAME" -ForegroundColor Green
 
-Write-Host "`n=== Export Complete ===" -ForegroundColor Green
-Write-Host "`nOutput files:" -ForegroundColor Yellow
-Write-Host "  - $OutputPath\ad-config.json" -ForegroundColor White
-Write-Host "  - $OutputPath\identity-data.json" -ForegroundColor White
+# === COMPLETION ===
+Write-Host "`n========================================" -ForegroundColor Green
+Write-Host "  Export Complete!" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
 
-Write-Host "`n⚠️  IMPORTANT:" -ForegroundColor Red
-Write-Host "  These files contain sensitive organizational data" -ForegroundColor Yellow
-Write-Host "  - Encrypt before transferring" -ForegroundColor Yellow
-Write-Host "  - Delete securely after assessment" -ForegroundColor Yellow
-Write-Host "  - Never commit to version control`n" -ForegroundColor Yellow
+Write-Host "`nOutput Files:" -ForegroundColor Yellow
+Write-Host "  $OutputPath\ad-config.json" -ForegroundColor White
+Write-Host "  $OutputPath\ad-identity.json" -ForegroundColor White
 
-Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. Run SharpHound (optional): .\SharpHound.exe -c All" -ForegroundColor White
-Write-Host "  2. Run PingCastle (optional): .\PingCastle.exe --healthcheck" -ForegroundColor White
-Write-Host "  3. Export Azure AD data (if hybrid): .\Export-AzureADData.ps1" -ForegroundColor White
-Write-Host "  4. Run assessment: bun run RunFullAssessment.ts`n" -ForegroundColor White
+Write-Host "`n" -NoNewline
+Write-Host "IMPORTANT SECURITY NOTICE" -ForegroundColor Red -BackgroundColor Black
+Write-Host "These files contain HIGHLY SENSITIVE data about your organization:" -ForegroundColor Yellow
+Write-Host "  - User accounts and group memberships" -ForegroundColor White
+Write-Host "  - Password policies and security settings" -ForegroundColor White
+Write-Host "  - Privileged account information" -ForegroundColor White
+Write-Host "  - Domain controller details`n" -ForegroundColor White
+
+Write-Host "Security Requirements:" -ForegroundColor Yellow
+Write-Host "  [1] Encrypt files before transferring to another computer" -ForegroundColor White
+Write-Host "  [2] Delete securely after completing assessment" -ForegroundColor White
+Write-Host "  [3] NEVER commit to version control (Git, etc.)" -ForegroundColor White
+Write-Host "  [4] NEVER email without encryption`n" -ForegroundColor White
+
+Write-Host "Next Steps:" -ForegroundColor Cyan
+Write-Host "  [1] Run Azure AD export (if you have Azure AD):" -ForegroundColor White
+Write-Host "      .\Export-AzureADData.ps1 -OutputPath $OutputPath`n" -ForegroundColor Gray
+Write-Host "  [2] Run BloodHound collection (recommended):" -ForegroundColor White
+Write-Host "      .\SharpHound.exe -c All --outputdirectory $OutputPath\bloodhound`n" -ForegroundColor Gray
+Write-Host "  [3] Run PingCastle scan (recommended):" -ForegroundColor White
+Write-Host "      .\PingCastle.exe --healthcheck --server $($domain.PDCEmulator)`n" -ForegroundColor Gray
+Write-Host "  [4] Run the complete assessment:" -ForegroundColor White
+Write-Host "      .\Run-CompleteAssessment.ps1`n" -ForegroundColor Gray

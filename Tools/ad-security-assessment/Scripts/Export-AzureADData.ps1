@@ -1,26 +1,45 @@
 # Export-AzureADData.ps1
 # Exports Azure AD configuration for security assessment
 # Requires: Microsoft Graph PowerShell module and appropriate permissions
+#
+# BEGINNER'S GUIDE:
+# 1. Open PowerShell (does not need to be Administrator)
+# 2. Navigate to this script's location: cd C:\SecurityAssessment\Scripts
+# 3. Run: .\Export-AzureADData.ps1 -OutputPath C:\SecurityAssessment\data
+# 4. Sign in when prompted (use an account with Global Reader or Security Reader role)
+# 5. Wait for completion (may take 10-45 minutes depending on tenant size)
 
 param(
-    [string]$OutputPath = "C:\Temp\ADAssessment"
+    [Parameter(HelpMessage="Where to save the exported data files")]
+    [string]$OutputPath = "C:\SecurityAssessment\data"
 )
 
+# Create output directory if it doesn't exist
+Write-Host "`n========================================" -ForegroundColor Cyan
+Write-Host "  Azure AD Security Assessment Export" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Output Location: $OutputPath`n" -ForegroundColor Yellow
+
+New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+
 # Check for Microsoft Graph module
+Write-Host "[Step 1/7] Checking prerequisites..." -ForegroundColor Green
 if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
-    Write-Error "Microsoft Graph PowerShell module not found."
-    Write-Host "Install with: Install-Module Microsoft.Graph -Scope CurrentUser" -ForegroundColor Yellow
+    Write-Host "`n  ERROR: Microsoft Graph PowerShell module not found!" -ForegroundColor Red
+    Write-Host "  This module is required to collect Azure AD data.`n" -ForegroundColor Yellow
+    Write-Host "  To install (run PowerShell as Administrator):" -ForegroundColor Cyan
+    Write-Host "    Install-Module Microsoft.Graph -Scope CurrentUser -Force`n" -ForegroundColor White
+    Write-Host "  Then restart PowerShell and run this script again.`n" -ForegroundColor Yellow
     exit 1
 }
 
-# Create output directory
-New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-
-Write-Host "`n=== Azure AD Security Assessment Data Export ===" -ForegroundColor Cyan
-Write-Host "Output: $OutputPath`n" -ForegroundColor Yellow
+Write-Host "  SUCCESS: Microsoft Graph module found" -ForegroundColor Green
 
 # Connect to Microsoft Graph
-Write-Host "[1/6] Connecting to Microsoft Graph..." -ForegroundColor Green
+Write-Host "`n[Step 2/7] Connecting to Microsoft Graph..." -ForegroundColor Green
+Write-Host "  A browser window will open for authentication..." -ForegroundColor Yellow
+Write-Host "  Please sign in with Global Reader or Security Reader account`n" -ForegroundColor Yellow
+
 try {
     Connect-MgGraph -Scopes @(
         "User.Read.All",
@@ -31,54 +50,78 @@ try {
         "Directory.Read.All"
     ) -ErrorAction Stop
 
-    Write-Host "  ✓ Connected successfully" -ForegroundColor Green
-} catch {
-    Write-Error "Failed to connect to Microsoft Graph: $_"
+    $context = Get-MgContext
+    Write-Host "  SUCCESS: Connected to tenant $($context.TenantId)" -ForegroundColor Green
+    Write-Host "  Account: $($context.Account)" -ForegroundColor Cyan
+}
+catch {
+    Write-Host "`n  ERROR: Failed to connect to Microsoft Graph" -ForegroundColor Red
+    Write-Host "  $($_.Exception.Message)`n" -ForegroundColor Yellow
     exit 1
 }
 
+# Initialize data collection object
 $azureADData = @{
     collectionDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    tenantId = (Get-MgOrganization).Id
+    tenantId = $context.TenantId
+    users = @()
+    conditionalAccessPolicies = @()
+    pimConfiguration = @()
+    securityDefaults = $null
 }
 
-# === 1. USER DATA ===
-Write-Host "`n[2/6] Collecting User Data..." -ForegroundColor Green
+# === SECTION 1: USER DATA ===
+Write-Host "`n[Step 3/7] Collecting User Data..." -ForegroundColor Green
+Write-Host "  This may take several minutes for large tenants..." -ForegroundColor Yellow
 
-$users = @()
 $allUsers = Get-MgUser -All -Property `
     UserPrincipalName, DisplayName, UserType, AccountEnabled, SignInActivity, CreatedDateTime, AssignedLicenses
 
 $totalUsers = $allUsers.Count
 $counter = 0
 
+Write-Host "  - Found $totalUsers users" -ForegroundColor Cyan
+Write-Host "  - Checking MFA status for each user..." -ForegroundColor Gray
+
 foreach ($user in $allUsers) {
     $counter++
     if ($counter % 100 -eq 0) {
-        Write-Progress -Activity "Processing users" -Status "$counter of $totalUsers" -PercentComplete (($counter / $totalUsers) * 100)
+        $percentComplete = [math]::Round(($counter / $totalUsers) * 100, 1)
+        Write-Host "    Progress: $counter of $totalUsers ($percentComplete%)" -ForegroundColor Gray
     }
 
     # Check MFA status
+    $mfaEnabled = $false
     try {
         $authMethods = Get-MgUserAuthenticationMethod -UserId $user.Id -ErrorAction SilentlyContinue
-        $mfaEnabled = ($authMethods.Count -gt 1)  # More than just password
-    } catch {
-        $mfaEnabled = $false
+        $mfaEnabled = ($authMethods.Count -gt 1)  # More than just password means MFA
+    }
+    catch {
+        # Unable to query auth methods - likely no permission or user issue
     }
 
     # Check assigned roles
+    $assignedRoles = @()
     try {
         $roleAssignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter "principalId eq '$($user.Id)'" -ErrorAction SilentlyContinue
-        $assignedRoles = $roleAssignments | ForEach-Object {
-            $roleId = $_.RoleDefinitionId
-            $role = Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $roleId -ErrorAction SilentlyContinue
-            $role.DisplayName
+        foreach ($assignment in $roleAssignments) {
+            try {
+                $roleId = $assignment.RoleDefinitionId
+                $role = Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $roleId -ErrorAction SilentlyContinue
+                if ($role) {
+                    $assignedRoles += $role.DisplayName
+                }
+            }
+            catch {
+                # Skip roles we cannot query
+            }
         }
-    } catch {
-        $assignedRoles = @()
+    }
+    catch {
+        # No role assignments or insufficient permissions
     }
 
-    $users += @{
+    $azureADData.users += @{
         userPrincipalName = $user.UserPrincipalName
         displayName = $user.DisplayName
         userType = $user.UserType
@@ -91,126 +134,150 @@ foreach ($user in $allUsers) {
     }
 }
 
-Write-Progress -Activity "Processing users" -Completed
-$azureADData.users = $users
-Write-Host "  ✓ Processed $($users.Count) users" -ForegroundColor Green
+$mfaEnabledCount = ($azureADData.users | Where-Object {$_.mfaStatus -eq "enabled"}).Count
+$mfaPercentage = if ($totalUsers -gt 0) { [math]::Round(($mfaEnabledCount / $totalUsers) * 100, 1) } else { 0 }
 
-# === 2. CONDITIONAL ACCESS POLICIES ===
-Write-Host "`n[3/6] Collecting Conditional Access Policies..." -ForegroundColor Green
+Write-Host "  SUCCESS: Processed $totalUsers users" -ForegroundColor Green
+Write-Host "    MFA Enabled: $mfaEnabledCount ($mfaPercentage%)" -ForegroundColor Cyan
 
-try {
-    $caPolicies = Get-MgIdentityConditionalAccessPolicy | Select-Object `
-        @{Name='name';Expression={$_.DisplayName}},
-        State,
-        Conditions,
-        GrantControls,
-        SessionControls
-
-    $azureADData.conditionalAccessPolicies = $caPolicies
-    Write-Host "  ✓ Found $($caPolicies.Count) policies" -ForegroundColor Green
-} catch {
-    Write-Warning "  Unable to retrieve Conditional Access policies (requires Azure AD Premium)"
-    $azureADData.conditionalAccessPolicies = @()
-}
-
-# === 3. PIM CONFIGURATION ===
-Write-Host "`n[4/6] Checking PIM Configuration..." -ForegroundColor Green
+# === SECTION 2: CONDITIONAL ACCESS POLICIES ===
+Write-Host "`n[Step 4/7] Collecting Conditional Access Policies..." -ForegroundColor Green
 
 try {
-    $pimConfig = @()
-    $roles = Get-MgRoleManagementDirectoryRoleDefinition -All
+    $caPolicies = Get-MgIdentityConditionalAccessPolicy -ErrorAction Stop
 
-    foreach ($role in $roles | Where-Object { $_.DisplayName -match "Administrator|Admin" } | Select-Object -First 20) {
-        try {
-            $assignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($role.Id)'" -All
-
-            $activeCount = 0
-            $eligibleCount = 0
-
-            foreach ($assignment in $assignments) {
-                # Check if eligible or active (this is simplified - full PIM requires additional API calls)
-                if ($assignment.DirectoryScopeId -eq "/") {
-                    $activeCount++
-                }
-            }
-
-            if ($activeCount -gt 0) {
-                $pimConfig += @{
-                    roleName = $role.DisplayName
-                    activeAssignments = $activeCount
-                    eligibleAssignments = $eligibleCount  # Would need PIM API for accurate count
-                }
-            }
-        } catch {
-            # Skip roles we can't query
+    foreach ($policy in $caPolicies) {
+        $azureADData.conditionalAccessPolicies += @{
+            name = $policy.DisplayName
+            state = $policy.State
+            conditions = $policy.Conditions
+            grantControls = $policy.GrantControls
+            sessionControls = $policy.SessionControls
+            createdDateTime = $policy.CreatedDateTime
+            modifiedDateTime = $policy.ModifiedDateTime
         }
     }
 
-    $azureADData.pimConfiguration = $pimConfig
-    Write-Host "  ✓ Analyzed $($pimConfig.Count) privileged roles" -ForegroundColor Green
-} catch {
-    Write-Warning "  PIM data unavailable (requires Azure AD Premium P2)"
-    $azureADData.pimConfiguration = @()
+    Write-Host "  SUCCESS: Found $($caPolicies.Count) Conditional Access policies" -ForegroundColor Green
+}
+catch {
+    Write-Host "  WARNING: Unable to retrieve Conditional Access policies" -ForegroundColor Yellow
+    Write-Host "    This feature requires Azure AD Premium P1 or P2" -ForegroundColor Gray
 }
 
-# === 4. SECURITY DEFAULTS ===
-Write-Host "`n[5/6] Checking Security Settings..." -ForegroundColor Green
+# === SECTION 3: PIM CONFIGURATION ===
+Write-Host "`n[Step 5/7] Checking Privileged Identity Management..." -ForegroundColor Green
 
 try {
-    $securityDefaults = Get-MgPolicyIdentitySecurityDefaultEnforcementPolicy
+    $roles = Get-MgRoleManagementDirectoryRoleDefinition -All -ErrorAction Stop
+
+    $adminRoles = $roles | Where-Object { $_.DisplayName -match "Administrator|Admin" } | Select-Object -First 20
+
+    foreach ($role in $adminRoles) {
+        try {
+            $assignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter "roleDefinitionId eq '$($role.Id)'" -All -ErrorAction SilentlyContinue
+
+            $activeCount = $assignments.Count
+
+            if ($activeCount -gt 0) {
+                $azureADData.pimConfiguration += @{
+                    roleName = $role.DisplayName
+                    roleId = $role.Id
+                    activeAssignments = $activeCount
+                    eligibleAssignments = 0  # Would need PIM-specific API for accurate eligible count
+                }
+            }
+        }
+        catch {
+            # Skip roles we cannot query
+        }
+    }
+
+    Write-Host "  SUCCESS: Analyzed $($azureADData.pimConfiguration.Count) privileged roles" -ForegroundColor Green
+}
+catch {
+    Write-Host "  WARNING: PIM data unavailable" -ForegroundColor Yellow
+    Write-Host "    Full PIM analysis requires Azure AD Premium P2" -ForegroundColor Gray
+}
+
+# === SECTION 4: SECURITY DEFAULTS ===
+Write-Host "`n[Step 6/7] Checking Security Settings..." -ForegroundColor Green
+
+try {
+    $securityDefaults = Get-MgPolicyIdentitySecurityDefaultEnforcementPolicy -ErrorAction Stop
     $azureADData.securityDefaults = $securityDefaults.IsEnabled
-    Write-Host "  Security Defaults: $($securityDefaults.IsEnabled)" -ForegroundColor Cyan
-} catch {
+
+    if ($securityDefaults.IsEnabled) {
+        Write-Host "  Security Defaults: ENABLED" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  Security Defaults: DISABLED" -ForegroundColor Yellow
+    }
+}
+catch {
+    Write-Host "  WARNING: Unable to check Security Defaults" -ForegroundColor Yellow
     $azureADData.securityDefaults = $null
-    Write-Warning "  Unable to check Security Defaults"
 }
 
-# Check for legacy auth (simplified - would need sign-in logs for accurate detection)
-$azureADData.legacyAuthEnabled = $null  # Requires analyzing sign-in logs
+# === SECTION 5: STATISTICS ===
+Write-Host "`n[Step 7/7] Generating Statistics..." -ForegroundColor Green
 
-# Password protection settings (not available via Graph API - portal only)
-$azureADData.passwordProtection = @{
-    customBannedPasswords = $null
-    enabledOnPremises = $null
-}
+$memberUsers = ($azureADData.users | Where-Object {$_.userType -eq "Member"}).Count
+$guestUsers = ($azureADData.users | Where-Object {$_.userType -eq "Guest"}).Count
+$enabledUsers = ($azureADData.users | Where-Object {$_.accountEnabled}).Count
+$privilegedUsers = ($azureADData.users | Where-Object {$_.assignedRoles.Count -gt 0}).Count
 
-# === 5. STATISTICS ===
-Write-Host "`n[6/6] Generating Statistics..." -ForegroundColor Green
+Write-Host "`nTenant Summary:" -ForegroundColor Cyan
+Write-Host "  Tenant ID: $($azureADData.tenantId)" -ForegroundColor White
+Write-Host "  Total Users: $totalUsers" -ForegroundColor Cyan
+Write-Host "    - Member Users: $memberUsers" -ForegroundColor White
+Write-Host "    - Guest Users: $guestUsers" -ForegroundColor White
+Write-Host "    - Enabled: $enabledUsers" -ForegroundColor White
+Write-Host "  MFA Adoption: $mfaPercentage% ($mfaEnabledCount users)" -ForegroundColor Cyan
+Write-Host "  Privileged Users: $privilegedUsers" -ForegroundColor Cyan
+Write-Host "  Conditional Access Policies: $($azureADData.conditionalAccessPolicies.Count)" -ForegroundColor Cyan
+Write-Host "  Privileged Roles with Assignments: $($azureADData.pimConfiguration.Count)" -ForegroundColor Cyan
+Write-Host "  Security Defaults: $(if ($azureADData.securityDefaults) {'Enabled'} else {'Disabled or Unknown'})" -ForegroundColor Cyan
 
-$stats = @{
-    totalUsers = $users.Count
-    memberUsers = ($users | Where-Object {$_.userType -eq "Member"}).Count
-    guestUsers = ($users | Where-Object {$_.userType -eq "Guest"}).Count
-    enabledUsers = ($users | Where-Object {$_.accountEnabled}).Count
-    usersWithMFA = ($users | Where-Object {$_.mfaStatus -eq "enabled"}).Count
-    privilegedRoles = $pimConfig.Count
-    caPolicies = $azureADData.conditionalAccessPolicies.Count
-}
+# === SECTION 6: SAVE OUTPUT ===
+Write-Host "`n[Step 8/8] Saving Data..." -ForegroundColor Green
 
-$mfaPercentage = if ($stats.memberUsers -gt 0) {
-    [math]::Round(($stats.usersWithMFA / $stats.memberUsers) * 100, 1)
-} else { 0 }
-
-Write-Host "  Total Users: $($stats.totalUsers) ($($stats.memberUsers) members, $($stats.guestUsers) guests)" -ForegroundColor Cyan
-Write-Host "  MFA Adoption: $mfaPercentage% ($($stats.usersWithMFA) of $($stats.memberUsers) members)" -ForegroundColor Cyan
-Write-Host "  Conditional Access Policies: $($stats.caPolicies)" -ForegroundColor Cyan
-Write-Host "  Privileged Roles Analyzed: $($stats.privilegedRoles)" -ForegroundColor Cyan
-
-# === 6. SAVE OUTPUT ===
-$azureADData | ConvertTo-Json -Depth 15 | Out-File "$OutputPath\azure-ad-data.json" -Encoding UTF8
+$outputFile = "$OutputPath\azure-ad.json"
+$azureADData | ConvertTo-Json -Depth 15 | Out-File $outputFile -Encoding UTF8
 
 # Secure permissions
 icacls $OutputPath /inheritance:r /grant:r "$env:USERNAME:(OI)(CI)F" | Out-Null
 
-# Disconnect
+# Disconnect from Microsoft Graph
 Disconnect-MgGraph | Out-Null
 
-Write-Host "`n=== Export Complete ===" -ForegroundColor Green
-Write-Host "`nOutput file:" -ForegroundColor Yellow
-Write-Host "  - $OutputPath\azure-ad-data.json" -ForegroundColor White
+Write-Host "  SUCCESS: Data saved to azure-ad.json" -ForegroundColor Green
+Write-Host "  SUCCESS: File permissions restricted to $env:USERNAME" -ForegroundColor Green
 
-Write-Host "`n⚠️  IMPORTANT:" -ForegroundColor Red
-Write-Host "  This file contains sensitive organizational data" -ForegroundColor Yellow
-Write-Host "  - Encrypt before transferring" -ForegroundColor Yellow
-Write-Host "  - Delete securely after assessment" -ForegroundColor Yellow
-Write-Host "  - Never commit to version control`n" -ForegroundColor Yellow
+# === COMPLETION ===
+Write-Host "`n========================================" -ForegroundColor Green
+Write-Host "  Export Complete!" -ForegroundColor Green
+Write-Host "========================================" -ForegroundColor Green
+
+Write-Host "`nOutput File:" -ForegroundColor Yellow
+Write-Host "  $outputFile" -ForegroundColor White
+
+Write-Host "`n" -NoNewline
+Write-Host "IMPORTANT SECURITY NOTICE" -ForegroundColor Red -BackgroundColor Black
+Write-Host "This file contains HIGHLY SENSITIVE data about your organization:" -ForegroundColor Yellow
+Write-Host "  - User accounts and authentication methods" -ForegroundColor White
+Write-Host "  - MFA status for all users" -ForegroundColor White
+Write-Host "  - Privileged role assignments" -ForegroundColor White
+Write-Host "  - Conditional Access policies`n" -ForegroundColor White
+
+Write-Host "Security Requirements:" -ForegroundColor Yellow
+Write-Host "  [1] Encrypt files before transferring to another computer" -ForegroundColor White
+Write-Host "  [2] Delete securely after completing assessment" -ForegroundColor White
+Write-Host "  [3] NEVER commit to version control (Git, etc.)" -ForegroundColor White
+Write-Host "  [4] NEVER email without encryption`n" -ForegroundColor White
+
+Write-Host "Next Steps:" -ForegroundColor Cyan
+Write-Host "  [1] If you also have on-premises AD, run:" -ForegroundColor White
+Write-Host "      .\Export-ADData.ps1 -OutputPath $OutputPath`n" -ForegroundColor Gray
+Write-Host "  [2] Run the complete assessment:" -ForegroundColor White
+Write-Host "      .\Run-CompleteAssessment.ps1`n" -ForegroundColor Gray
