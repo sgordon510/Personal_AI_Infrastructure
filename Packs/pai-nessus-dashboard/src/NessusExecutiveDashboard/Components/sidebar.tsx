@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Shield, Server, Upload, FileText, AlertTriangle } from "lucide-react"
+import { Home, Shield, Server, Upload, FileText, AlertTriangle, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
   { name: "Executive Summary", href: "/", icon: Home },
+  { name: "Trends & Progress", href: "/trends", icon: TrendingUp },
   { name: "Vulnerabilities", href: "/vulnerabilities", icon: AlertTriangle },
   { name: "Affected Hosts", href: "/hosts", icon: Server },
   { name: "Upload Scan", href: "/upload", icon: Upload },
