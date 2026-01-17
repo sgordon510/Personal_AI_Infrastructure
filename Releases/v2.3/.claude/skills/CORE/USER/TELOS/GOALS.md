@@ -28,10 +28,17 @@ Goals support your missions (M#) and represent concrete outcomes you want to ach
 - [ ] Document CTF writeups and learnings
 - [ ] Contribute to open source security projects
 
-### G2: [Third Goal]
+### G2: AD/Azure Security Auditing Toolkit
 **Status:** Active
-**Supports:** M1
-**Target:** [Target date]
+**Supports:** M0, M1
+**Target:** 2026
+**Context:** Information Security Manager role - building scripts to analyze Active Directory and Azure environments for misconfigurations, vulnerabilities, and compliance gaps.
+**Progress:**
+- [ ] Extract and review existing scripts from previous work
+- [ ] Identify gaps in current coverage
+- [ ] Expand AD analysis capabilities
+- [ ] Add Azure environment security checks
+- [ ] Create actionable reporting output
 
 ---
 
