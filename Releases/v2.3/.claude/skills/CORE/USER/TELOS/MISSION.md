@@ -15,12 +15,12 @@ Achieve deep expertise in cybersecurity, penetration testing, and security resea
 **How:** Continuous learning through CTFs, hands-on practice, security research, and building security tools
 **Timeline:** Ongoing - mastery is a lifelong pursuit
 
-### M1: [Secondary Mission]
-[Your secondary mission - another core purpose]
+### M1: Grow Skills & Career Development
+Continuously develop technical and professional capabilities to advance in the security field, building a reputation and career that provides opportunities, income, and impact.
 
-**Why:** [Why this matters]
-**How:** [Your approach]
-**Timeline:** [Timeline]
+**Why:** Skills without career growth limits impact. Career development opens doors to better challenges, compensation, and influence in the security community.
+**How:** Certifications, networking, visible contributions (CTF rankings, CVEs, talks), strategic job moves
+**Timeline:** Ongoing - each year should show measurable progression
 
 ### M2: [Long-term Mission]
 [A longer-term mission, perhaps for later in life]
