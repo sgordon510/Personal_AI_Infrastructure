@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a2e;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Tokyo Night Day color palette */
+.text-primary { color: #2e7de9; }
+.text-secondary { color: #9854f1; }
+.text-success { color: #33b579; }
+.text-warning { color: #f0a020; }
+.text-danger { color: #f52a65; }
+.text-info { color: #118c74; }
+
+.bg-primary { background-color: #2e7de9; }
+.bg-secondary { background-color: #9854f1; }
+.bg-success { background-color: #33b579; }
+.bg-warning { background-color: #f0a020; }
+.bg-danger { background-color: #f52a65; }
+.bg-info { background-color: #118c74; }
