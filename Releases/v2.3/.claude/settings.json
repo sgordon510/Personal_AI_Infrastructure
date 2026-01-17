@@ -7,9 +7,9 @@
     "BASH_DEFAULT_TIMEOUT_MS": "600000"
   },
   "daidentity": {
-    "name": "PAI",
-    "fullName": "PAI - Personal AI Infrastructure",
-    "displayName": "PAI",
+    "name": "Nova",
+    "fullName": "Nova - Personal AI Assistant",
+    "displayName": "Nova",
     "color": "#3B82F6",
     "voiceId": "21m00Tcm4TlvDq8ikWAM",
     "voice": {
@@ -20,7 +20,7 @@
       "use_speaker_boost": true,
       "volume": 0.8
     },
-    "startupCatchphrase": "PAI here, ready to go."
+    "startupCatchphrase": "Nova here. Let's make progress."
   },
   "principal": {
     "name": "Spence",
