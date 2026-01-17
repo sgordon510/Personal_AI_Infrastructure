@@ -8,21 +8,25 @@ Goals support your missions (M#) and represent concrete outcomes you want to ach
 
 ## Active Goals
 
-### G0: [Primary Goal]
+### G0: Develop Core Security Skills
 **Status:** Active
 **Supports:** M0
-**Target:** [When you want to achieve this]
+**Target:** Ongoing
 **Progress:**
-- [ ] [Milestone 1]
-- [ ] [Milestone 2]
-- [ ] [Milestone 3]
+- [ ] Master network fundamentals (TCP/IP, protocols, packet analysis)
+- [ ] Complete hands-on penetration testing practice
+- [ ] Build proficiency in security tools (Burp Suite, Wireshark, Metasploit)
+- [ ] Understand web application vulnerabilities (OWASP Top 10)
+- [ ] Practice reverse engineering and binary analysis
 
-### G1: [Second Goal]
+### G1: Build Security Projects & Portfolio
 **Status:** Active
-**Supports:** M0, M1
-**Target:** [Target date]
+**Supports:** M0
+**Target:** 2026
 **Progress:**
-- [ ] [Milestone]
+- [ ] Create security automation tools
+- [ ] Document CTF writeups and learnings
+- [ ] Contribute to open source security projects
 
 ### G2: [Third Goal]
 **Status:** Active

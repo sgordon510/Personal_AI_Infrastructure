@@ -8,12 +8,12 @@ Missions are your ultimate purposes - the "why" behind everything else in your T
 
 ## Missions
 
-### M0: [Primary Mission]
-[Your primary life mission - what you're ultimately working toward]
+### M0: Master Security & Hacking
+Achieve deep expertise in cybersecurity, penetration testing, and security research to understand systems at a fundamental level and contribute to a more secure digital world.
 
-**Why:** [Why this matters to you]
-**How:** [How you pursue this]
-**Timeline:** [Ongoing / By X year]
+**Why:** Security mastery requires understanding how systems actually work, not just how they're supposed to work. This knowledge compounds and applies across all technical domains.
+**How:** Continuous learning through CTFs, hands-on practice, security research, and building security tools
+**Timeline:** Ongoing - mastery is a lifelong pursuit
 
 ### M1: [Secondary Mission]
 [Your secondary mission - another core purpose]
