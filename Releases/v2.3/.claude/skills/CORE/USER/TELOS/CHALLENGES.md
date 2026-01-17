@@ -8,17 +8,17 @@ Be honest about what's holding you back. Identifying challenges clearly is the f
 
 ## Active Challenges
 
-### C0: [Primary Challenge]
-**Impact:** [How this affects your life/work]
-**Root Cause:** [What's really causing this, if known]
+### C0: Motivation & Consistency
+**Impact:** Start projects and learning sprints strong, but momentum fades. Progress becomes sporadic instead of compounding.
+**Root Cause:** Lack of visible progress, no accountability structure, competing priorities drain energy
 **Linked Strategies:** S0
 **Status:** Working on it
 
-### C1: [Second Challenge]
-**Impact:** [Impact description]
-**Root Cause:** [Cause if known]
+### C1: Technical Gaps
+**Impact:** Missing foundational knowledge creates friction when tackling advanced topics. Have to backtrack frequently.
+**Root Cause:** Jumped into security without solid CS/networking fundamentals; learning path has gaps
 **Linked Strategies:** S1
-**Status:** Aware, planning approach
+**Status:** Aware, building foundation
 
 ### C2: [Habit/Discipline Challenge]
 **Impact:** [How this limits you]
