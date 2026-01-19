@@ -22,14 +22,24 @@ NC='\033[0m' # No Color
 
 # Protected paths - NEVER accept upstream changes for these
 PROTECTED_PATHS=(
+    # Identity and customizations
     "Releases/v2.3/.claude/skills/CORE/USER"
     "Releases/v2.3/.claude/USER"
+    "Packs/pai-core-install/src/skills/CORE/USER"
+
+    # Personal skills (_ALLCAPS convention from Discussion #435)
+    "Releases/v2.3/.claude/skills/_"
+    "skills/_"
+
+    # Memory and learning
     "Releases/v2.3/.claude/MEMORY"
     "Releases/v2.3/.claude/History"
-    "Packs/pai-core-install/src/skills/CORE/USER"
+    "MEMORY/SIGNALS/ratings.jsonl"
+
+    # Secrets (never in repo, but protect anyway)
     ".env"
     ".env.local"
-    "settings.json"
+    ".env.production"
 )
 
 # Parse arguments

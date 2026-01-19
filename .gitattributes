@@ -29,7 +29,15 @@
 **/MEMORY/** merge=ours
 **/History/** merge=ours
 **/LEARNINGS/** merge=ours
+
+# Personal skills (_ALLCAPS convention from Discussion #435)
+**/skills/_*/** merge=ours
+**/_PERSONALSKILLS/** merge=ours
+
+# Knowledge base
+**/kb/** merge=ours
+
+# Secrets and config
 .env merge=ours
 .env.* merge=ours
-settings.json merge=ours
 ratings.jsonl merge=ours

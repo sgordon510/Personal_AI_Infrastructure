@@ -158,6 +158,107 @@ your_customizations:
       purpose: "Content you reference frequently"
 
 # =============================================================================
+# PERSONAL SKILLS (Community Practice from Discussion #435)
+# Skills using _ALLCAPS naming convention are YOURS and never sync
+# =============================================================================
+personal_skills:
+  description: "Custom skills that should never sync with upstream"
+  naming_convention: "_ALLCAPS prefix (e.g., _MYSKILL, _WORKFLOWS)"
+
+  directories:
+    - "skills/_*"                    # Any skill starting with underscore
+    - "skills/_PERSONALSKILLS/"      # Dedicated personal skills folder
+    - "Releases/v2.3/.claude/skills/_*"
+
+  creation_pattern: |
+    To create a personal skill that never syncs:
+    1. Name it with _ALLCAPS: skills/_MYRESEARCH/
+    2. Add SKILL.md, Workflows/, etc. as normal
+    3. It will be ignored by upstream sync automatically
+
+# =============================================================================
+# CHAIN-LOADING PATTERN (Community Practice)
+# Extend SYSTEM files without modifying them
+# =============================================================================
+chain_loading:
+  description: "How to extend functionality without touching SYSTEM files"
+
+  entry_point: "SKILLCUSTOMIZATIONS/{SkillName}/PREFERENCES.md"
+  reason: "Skills auto-load PREFERENCES.md, use it to chain-load your extensions"
+
+  example: |
+    # In SKILLCUSTOMIZATIONS/Research/PREFERENCES.md
+    When executing research, also load:
+    - SKILLCUSTOMIZATIONS/Research/Workflows/DeepDive.md
+    - SKILLCUSTOMIZATIONS/Research/Sources.md
+
+  benefits:
+    - "SYSTEM files stay pristine for upstream updates"
+    - "Your extensions load automatically"
+    - "No merge conflicts on SYSTEM files"
+
+# =============================================================================
+# KNOWLEDGE BASE (Community Practice)
+# Your personal knowledge outside skill structure
+# =============================================================================
+knowledge_base:
+  location: "USER/kb/"
+  structure:
+    - "USER/kb/domains/"      # Domain-specific knowledge
+    - "USER/kb/projects/"     # Project context
+    - "USER/kb/reference/"    # Reference materials
+  protection: "never_merge"
+
+# =============================================================================
+# PLATFORM COMPATIBILITY (Linux-specific)
+# Some PAI tools assume macOS paths
+# =============================================================================
+platform_fixes:
+  description: "Files that may need Linux path corrections"
+  issue: "Some tools hardcode /Users/ (macOS) instead of /home/ (Linux)"
+
+  detection_command: |
+    grep -rn "/Users/" ~/.claude/skills/*/Tools/*.ts 2>/dev/null
+
+  files_to_check:
+    - "skills/*/Tools/*.ts"
+    - "hooks/*.ts"
+    - "Tools/*.ts"
+
+  pattern_to_fix: "/Users/"
+  replacement: "${HOME}/"
+
+# =============================================================================
+# MIGRATION CHECKLIST (Community Practice from Discussion #435)
+# What to preserve vs skip when migrating PAI versions
+# =============================================================================
+migration:
+  preserve:
+    critical:
+      - "skills/CORE/USER/"
+      - "skills/_*/"                    # Personal skills
+      - "USER/kb/"                      # Knowledge base
+      - "MEMORY/SIGNALS/ratings.jsonl"  # Learning signal
+      - ".env"                          # Secrets
+    important:
+      - "MEMORY/LEARNING/"
+      - "MEMORY/RESEARCH/"
+      - "SKILLCUSTOMIZATIONS/"
+      - "Agent personalities"
+      - "Custom workflows"
+
+  skip:
+    description: "Regeneratable or fresh-install items"
+    items:
+      - "raw-outputs/"           # Regeneratable
+      - "node_modules/"          # Reinstall fresh
+      - "Hook-captured summaries" # SessionHarvester regenerates
+      - "Build artifacts"
+      - "Cache directories"
+      - "Log files"
+      - "Temporary work files"
+
+# =============================================================================
 # SYNC CONFIGURATION
 # Settings for the sync-upstream.sh script
 # =============================================================================
@@ -180,3 +281,25 @@ sync_settings:
   # Notification settings
   notify_on_upstream_changes: true
   auto_merge_enabled: false  # Recommend manual review
+
+# =============================================================================
+# ENVIRONMENT SEPARATION (Critical Practice)
+# API keys belong in .env, NOT settings.json
+# =============================================================================
+environment:
+  secrets_location: "~/.claude/.env"
+  never_in_settings_json:
+    - "ANTHROPIC_API_KEY"
+    - "OPENAI_API_KEY"
+    - "PERPLEXITY_API_KEY"
+    - "ELEVENLABS_API_KEY"
+    - "Any *_API_KEY"
+    - "Any *_SECRET"
+    - "Any *_TOKEN"
+
+  reason: |
+    PAI v2.3 expects API keys in ~/.claude/.env, NOT in settings.json.
+    This ensures:
+    1. Secrets never accidentally commit
+    2. settings.json can safely sync
+    3. .env is in .gitignore by default

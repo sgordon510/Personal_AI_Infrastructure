@@ -407,5 +407,232 @@ git checkout HEAD~1 -- "Releases/v2.3/.claude/skills/CORE/USER/"
 
 ---
 
+## Community Best Practices (from PAI Discussion #435)
+
+The following practices are sourced from the [PAI GitHub Discussion #435](https://github.com/danielmiessler/Personal_AI_Infrastructure/discussions/435) and represent battle-tested approaches from the PAI community.
+
+### SKILLCUSTOMIZATIONS Architecture
+
+The recommended pattern for extending skills without modifying core files:
+
+```
+~/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/
+├── {SkillName}/
+│   ├── EXTEND.yaml          # Extension configuration
+│   ├── PREFERENCES.md       # Skill-specific preferences (auto-loaded)
+│   └── Workflows/           # Custom workflows for this skill
+│       └── MyCustomFlow.md
+```
+
+**Key insight**: Skills automatically load `PREFERENCES.md`, so use it as an entry point to chain-load additional custom files:
+
+```markdown
+<!-- In SKILLCUSTOMIZATIONS/Research/PREFERENCES.md -->
+# Research Preferences
+
+## My Custom Extensions
+When executing research, also load:
+- `SKILLCUSTOMIZATIONS/Research/Workflows/DeepDive.md`
+- `SKILLCUSTOMIZATIONS/Research/Sources.md`
+```
+
+### Personal Skills Naming Convention
+
+For completely custom skills that should never sync:
+
+```
+~/.claude/skills/
+├── CORE/              # PAI standard (syncs with upstream)
+├── Research/          # PAI standard (syncs with upstream)
+├── _MYRESEARCH/       # YOUR custom skill (never syncs)
+├── _WORKFLOWS/        # YOUR custom skill (never syncs)
+└── _PERSONALSKILLS/   # YOUR custom skills directory
+```
+
+**The `_ALLCAPS` convention** signals "this is mine, never overwrite":
+- `_MYSKILL` - Your custom skill
+- `_WORKFLOWS` - Your custom workflows
+- `_PERSONALSKILLS/` - Directory for all your custom skills
+
+### Environment Separation
+
+**Critical**: PAI v2.3 expects API keys in `~/.claude/.env`, NOT in `settings.json`:
+
+```bash
+# ~/.claude/.env (CORRECT - protected, never committed)
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+PERPLEXITY_API_KEY=pplx-...
+ELEVENLABS_API_KEY=...
+
+# settings.json (WRONG for secrets - may sync)
+# Don't put API keys here!
+```
+
+This separation ensures:
+1. Secrets never accidentally commit
+2. `settings.json` can safely sync
+3. `.env` is in `.gitignore` by default
+
+### Platform-Specific Path Issues (Linux)
+
+**Critical for Linux users**: Some PAI tools assume macOS and hardcode `/Users/` paths.
+
+**Detection**:
+```bash
+# Find hardcoded macOS paths in your installation
+grep -rn "/Users/" ~/.claude/skills/*/Tools/*.ts 2>/dev/null
+grep -rn "/Users/" Releases/v2.3/.claude/skills/*/Tools/*.ts 2>/dev/null
+```
+
+**Solution**: Tools should use conditional path handling:
+```typescript
+const homeDir = process.env.HOME ||
+  (process.platform === 'darwin' ? `/Users/${process.env.USER}` : `/home/${process.env.USER}`);
+```
+
+Add to your `.pai-customizations.yaml`:
+```yaml
+platform_fixes:
+  description: "Files that need Linux path corrections"
+  files_to_check:
+    - "skills/*/Tools/*.ts"
+  pattern_to_fix: "/Users/"
+  replacement: "${HOME}/"
+```
+
+### What to Preserve vs. Skip During Migration
+
+| Preserve | Skip |
+|----------|------|
+| `skills/CORE/USER/` | `raw-outputs/` (regeneratable) |
+| `_PERSONALSKILLS/` | `node_modules/` (reinstall fresh) |
+| `MEMORY/LEARNING/` | Hook-captured session summaries |
+| `MEMORY/RESEARCH/` | Temporary work files |
+| `MEMORY/SIGNALS/ratings.jsonl` | Build artifacts |
+| `USER/kb/` (knowledge base) | Cache directories |
+| Agent personalities | Log files |
+| Custom workflows | |
+
+### Chain-Loading Pattern for Extensions
+
+When you want to extend a SYSTEM file without modifying it:
+
+1. **Don't modify**: `skills/CORE/SYSTEM/MEMORYSYSTEM.md`
+2. **Instead create**: `skills/CORE/USER/SKILLCUSTOMIZATIONS/CORE/MEMORY_EXTENSIONS.md`
+3. **Reference it** from your `PREFERENCES.md`:
+
+```markdown
+<!-- SKILLCUSTOMIZATIONS/CORE/PREFERENCES.md -->
+# CORE Skill Customizations
+
+## Memory Extensions
+For enhanced memory operations, also apply rules from:
+`SKILLCUSTOMIZATIONS/CORE/MEMORY_EXTENSIONS.md`
+
+## Response Format Extensions
+Apply my formatting preferences from:
+`USER/RESPONSEFORMAT.md`
+```
+
+This pattern:
+- Keeps SYSTEM files pristine for upstream updates
+- Your extensions load automatically via PREFERENCES.md
+- No merge conflicts on SYSTEM files
+
+### Knowledge Base Preservation
+
+Your personal knowledge base lives outside the skill structure:
+
+```
+~/.claude/
+├── USER/
+│   └── kb/                    # Your knowledge base
+│       ├── domains/           # Domain-specific knowledge
+│       ├── projects/          # Project context
+│       └── reference/         # Reference materials
+```
+
+Add to protected paths:
+```yaml
+never_merge:
+  directories:
+    - "USER/kb/"
+```
+
+### Migration Checklist (from Discussion)
+
+When migrating to a new PAI version:
+
+```bash
+# 1. Full backup
+tar -czf ~/pai-full-backup-$(date +%Y%m%d).tar.gz ~/.claude/
+
+# 2. Inventory your customizations
+find ~/.claude/skills -name "PREFERENCES.md" -o -name "_*" | head -50
+ls ~/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/
+
+# 3. List personal skills
+ls ~/.claude/skills/ | grep "^_"
+
+# 4. Check for hardcoded paths (Linux)
+grep -rn "/Users/" ~/.claude/skills/*/Tools/*.ts 2>/dev/null
+
+# 5. Copy personal skills to new installation
+cp -r ~/.claude/skills/_* ~/new-pai/.claude/skills/
+
+# 6. Copy SKILLCUSTOMIZATIONS
+cp -r ~/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/* \
+      ~/new-pai/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/
+
+# 7. Copy knowledge base
+cp -r ~/.claude/USER/kb ~/new-pai/.claude/USER/
+
+# 8. Copy MEMORY (selective)
+cp -r ~/.claude/MEMORY/LEARNING ~/new-pai/.claude/MEMORY/
+cp -r ~/.claude/MEMORY/RESEARCH ~/new-pai/.claude/MEMORY/
+cp ~/.claude/MEMORY/SIGNALS/ratings.jsonl ~/new-pai/.claude/MEMORY/SIGNALS/
+
+# 9. Verify .env exists in new location
+cp ~/.claude/.env ~/new-pai/.claude/.env
+```
+
+---
+
+## Updated Protection Summary
+
+Combining the original plan with community practices:
+
+```
+PROTECTION HIERARCHY (Enhanced)
+├── Tier 0: SECRETS (Never in repo)
+│   └── .env, .env.*, credentials
+│
+├── Tier 1: IDENTITY (Never merge)
+│   ├── skills/CORE/USER/**
+│   ├── USER/kb/**
+│   ├── _PERSONALSKILLS/**
+│   ├── skills/_*/**
+│   └── MEMORY/SIGNALS/ratings.jsonl
+│
+├── Tier 2: LEARNING (Never merge)
+│   ├── MEMORY/LEARNING/**
+│   ├── MEMORY/RESEARCH/**
+│   └── MEMORY/WORK/** (active only)
+│
+├── Tier 3: CUSTOMIZATIONS (Selective merge)
+│   ├── SKILLCUSTOMIZATIONS/**
+│   ├── Modified hooks
+│   └── Extended SYSTEM files
+│
+└── Tier 4: UPSTREAM (Auto merge)
+    ├── Packs/
+    ├── Tools/
+    └── Documentation
+```
+
+---
+
 *Plan created: 2026-01-19*
+*Updated: 2026-01-19 with community practices from Discussion #435*
 *For: Personal AI Infrastructure customization preservation*
