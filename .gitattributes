@@ -20,3 +20,16 @@
 *.gif binary
 *.ico binary
 *.pdf binary
+
+# =============================================================================
+# MERGE STRATEGIES - Protect customizations during upstream sync
+# =============================================================================
+# NEVER overwrite USER customizations - always keep local version
+**/USER/** merge=ours
+**/MEMORY/** merge=ours
+**/History/** merge=ours
+**/LEARNINGS/** merge=ours
+.env merge=ours
+.env.* merge=ours
+settings.json merge=ours
+ratings.jsonl merge=ours

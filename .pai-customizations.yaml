@@ -1,0 +1,182 @@
+# PAI Customization Manifest
+# Purpose: Explicitly define which files contain YOUR customizations
+# Usage: Referenced by sync scripts to protect your work during upstream merges
+
+version: "1.0"
+created: "2026-01-19"
+description: "Files that contain YOUR customizations - protect during upstream sync"
+
+# =============================================================================
+# TIER 1: NEVER MERGE
+# Your identity, personal data, and memories - ALWAYS keep local version
+# =============================================================================
+never_merge:
+  description: "Sacred files - upstream changes are NEVER accepted"
+
+  directories:
+    # Your identity and personalization
+    - "Releases/v2.3/.claude/skills/CORE/USER/"
+    - "Releases/v2.3/.claude/USER/"
+
+    # Your learning and memory
+    - "Releases/v2.3/.claude/MEMORY/"
+    - "Releases/v2.3/.claude/History/"
+    - "Releases/v2.3/.claude/SESSIONS/"
+
+    # Pack USER directories
+    - "Packs/pai-core-install/src/skills/CORE/USER/"
+
+  files:
+    # Credentials and secrets
+    - ".env"
+    - ".env.local"
+    - ".env.production"
+
+    # Identity configuration
+    - "settings.json"
+    - "Releases/v2.3/.claude/settings.json"
+
+  patterns:
+    - "**/USER/**"
+    - "**/MEMORY/**"
+    - "**/History/**"
+    - "**/.env*"
+    - "**/ratings.jsonl"
+    - "**/LEARNINGS/**"
+
+# =============================================================================
+# TIER 2: SELECTIVE MERGE
+# Infrastructure you may have customized - review diffs before accepting
+# =============================================================================
+selective_merge:
+  description: "Review upstream changes against your modifications"
+
+  files:
+    # Hooks you may have customized
+    - "Releases/v2.3/.claude/hooks/*.ts"
+    - "Releases/v2.3/.claude/hooks/handlers/*.ts"
+
+    # Skill definitions you may have enhanced
+    - "Releases/v2.3/.claude/skills/*/SKILL.md"
+
+    # System files you may have tweaked
+    - "Releases/v2.3/.claude/skills/CORE/SYSTEM/*.md"
+
+  review_strategy: |
+    For each file in selective_merge:
+    1. Compare your version with upstream: git diff main:file upstream/main:file
+    2. Identify upstream improvements worth keeping
+    3. Cherry-pick specific changes rather than wholesale replacement
+    4. Test after any merge
+
+# =============================================================================
+# TIER 3: AUTO-MERGE
+# Pure upstream content - safe to update automatically
+# =============================================================================
+auto_merge:
+  description: "Files you haven't customized - accept upstream changes"
+
+  directories:
+    # New packs and tools
+    - "Packs/"
+    - "Tools/"
+
+    # Documentation
+    - "Plans/"
+    - "docs/"
+
+  files:
+    # Root documentation (unless you've customized)
+    - "README.md"
+    - "INSTALL.md"
+    - "SECURITY.md"
+    - "CONTRIBUTING.md"
+
+    # Validation tooling
+    - "Tools/validate-protected.ts"
+    - ".pai-protected.json"
+
+  notes: |
+    Even for auto-merge files, review the diff to understand what changed.
+    New Packs may require installation steps.
+    Tool updates may have new dependencies.
+
+# =============================================================================
+# YOUR SPECIFIC CUSTOMIZATIONS
+# Document what you've personalized for easy reference
+# =============================================================================
+your_customizations:
+  identity:
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/ABOUTME.md"
+      purpose: "Your personal background and expertise"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/BASICINFO.md"
+      purpose: "Name, timezone, location"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/RESUME.md"
+      purpose: "Professional history"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/DAIDENTITY.md"
+      purpose: "Your AI's personality and voice"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/CONTACTS.md"
+      purpose: "People your AI knows about"
+
+  life_os_telos:
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/TELOS/"
+      purpose: "Your complete life operating system"
+      files:
+        - "BELIEFS.md - Core beliefs and values"
+        - "GOALS.md - What you're working toward"
+        - "MISSION.md - Your life mission"
+        - "STRATEGIES.md - How you approach problems"
+        - "PROJECTS.md - Active projects"
+        - "PROBLEMS.md - Challenges you're solving"
+        - "WISDOM.md - Accumulated insights"
+        - "LEARNED.md - Lessons learned"
+        - "MODELS.md - Mental models you use"
+        - "FRAMES.md - How you frame situations"
+
+  preferences:
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/TECHSTACKPREFERENCES.md"
+      purpose: "Technology choices and preferences"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/ALGOPREFS.md"
+      purpose: "Algorithm and methodology preferences"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/RESPONSEFORMAT.md"
+      purpose: "How you want responses formatted"
+
+  skills:
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/SKILLCUSTOMIZATIONS/"
+      purpose: "Per-skill preference overrides"
+      examples:
+        - "Art/CharacterSpecs.md - Art generation preferences"
+        - "Art/SceneConstruction.md - Scene building preferences"
+        - "Art/PREFERENCES.md - General art preferences"
+
+  context:
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/ARCHITECTURE.md"
+      purpose: "Your systems and architecture knowledge"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/DEFINITIONS.md"
+      purpose: "Terms and definitions you use"
+    - path: "Releases/v2.3/.claude/skills/CORE/USER/CORECONTENT.md"
+      purpose: "Content you reference frequently"
+
+# =============================================================================
+# SYNC CONFIGURATION
+# Settings for the sync-upstream.sh script
+# =============================================================================
+sync_settings:
+  # Upstream repository
+  upstream_url: "https://github.com/danielmiessler/PAI.git"
+  upstream_branch: "main"
+
+  # Your main branch
+  local_branch: "main"
+
+  # Branch naming for integration
+  integration_branch_prefix: "upstream-merge/"
+
+  # Backup settings
+  backup_before_sync: true
+  backup_directory: "~/pai-backups"
+  backup_retention_days: 30
+
+  # Notification settings
+  notify_on_upstream_changes: true
+  auto_merge_enabled: false  # Recommend manual review
