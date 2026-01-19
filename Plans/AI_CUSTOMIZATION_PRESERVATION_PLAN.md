@@ -633,6 +633,107 @@ PROTECTION HIERARCHY (Enhanced)
 
 ---
 
+## Project Work Preservation
+
+### Understanding the Two-Location Model
+
+Your PAI setup has **two distinct locations**:
+
+| Location | Purpose | What Lives Here |
+|----------|---------|-----------------|
+| **This Repository** (`~/Personal_AI_Infrastructure/`) | Fork of PAI for upstream sync | Templates, packs, documentation |
+| **Live Installation** (`~/.claude/`) | Your working PAI system | Active projects, memory, customizations |
+
+**Your project work** (Vulnerability Dashboard, Security Assessment, etc.) lives in your **live installation**, not this repository.
+
+### Where Project Artifacts Are Stored
+
+```
+~/.claude/                              # Your LIVE PAI installation
+├── MEMORY/
+│   ├── Work/                           # ACTIVE PROJECT WORKSPACES
+│   │   ├── Vulnerability-Dashboard/    # ← Your project
+│   │   │   ├── artifacts/
+│   │   │   ├── findings/
+│   │   │   └── reports/
+│   │   └── Security-Assessment/        # ← Your project
+│   │       ├── scope/
+│   │       ├── results/
+│   │       └── deliverables/
+│   ├── RESEARCH/                       # Research from projects
+│   │   ├── vulnerability-patterns/
+│   │   └── assessment-methodologies/
+│   ├── LEARNINGS/                      # Insights extracted from work
+│   └── SIGNALS/ratings.jsonl           # Learning feedback
+│
+├── skills/CORE/USER/
+│   ├── WORK/                           # Client/work-sensitive content
+│   │   ├── Customers/
+│   │   └── Engagements/
+│   └── TELOS/PROJECTS.md               # Project tracking
+│
+└── skills/_SECURITYPROJECTS/           # Personal security skill (if created)
+```
+
+### Project Preservation Strategy
+
+**Your projects are already protected** by the existing plan because:
+
+1. **MEMORY/Work/** is covered by `**/MEMORY/**` protection
+2. **MEMORY/RESEARCH/** is covered by `**/MEMORY/**` protection
+3. **USER/WORK/** is covered by `**/USER/**` protection
+4. **Personal skills** (`_SECURITYPROJECTS/`) are covered by `skills/_*/**` protection
+
+### Recommended: Backup Your Live Installation
+
+Since your actual work is in `~/.claude/`, not this repo, add this to your backup routine:
+
+```bash
+# Backup live PAI installation (includes all project work)
+backup_pai() {
+    local BACKUP_DIR="${HOME}/pai-backups"
+    local TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+    mkdir -p "$BACKUP_DIR"
+
+    # Full backup of live installation
+    tar -czf "$BACKUP_DIR/pai-live-$TIMESTAMP.tar.gz" \
+        --exclude='node_modules' \
+        --exclude='raw-outputs' \
+        --exclude='.git' \
+        ~/.claude/
+
+    echo "Backed up to: $BACKUP_DIR/pai-live-$TIMESTAMP.tar.gz"
+}
+
+# Run weekly or before major changes
+backup_pai
+```
+
+### Syncing Project Templates to This Repo
+
+If you want project **templates** (not actual data) in this repo for backup:
+
+```bash
+# Copy sanitized project templates (NO sensitive data)
+cp ~/.claude/MEMORY/Work/Vulnerability-Dashboard/templates/* \
+   ~/Personal_AI_Infrastructure/Releases/v2.3/.claude/skills/CORE/USER/WORK/templates/
+
+# NEVER copy actual findings, customer data, or deliverables
+```
+
+### Project Isolation Checklist
+
+For each project (Vulnerability Dashboard, Security Assessment):
+
+- [ ] Project workspace exists in `~/.claude/MEMORY/Work/[Project]/`
+- [ ] Sensitive findings are NOT in this repository
+- [ ] Templates (if any) are in `USER/WORK/templates/`
+- [ ] Project is tracked in `USER/TELOS/PROJECTS.md`
+- [ ] Regular backups of `~/.claude/` are scheduled
+
+---
+
 *Plan created: 2026-01-19*
 *Updated: 2026-01-19 with community practices from Discussion #435*
 *For: Personal AI Infrastructure customization preservation*
