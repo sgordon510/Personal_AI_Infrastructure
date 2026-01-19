@@ -1,0 +1,13 @@
+[Unit]
+Description=PAI Backup Cleanup (remove old backups)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/user/Personal_AI_Infrastructure/Tools/backup-pai.sh --clean
+User=%i
+StandardOutput=append:/home/user/pai-backups/backup.log
+StandardError=append:/home/user/pai-backups/backup.log
+
+[Install]
+WantedBy=multi-user.target
