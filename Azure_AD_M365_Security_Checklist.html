@@ -1,0 +1,899 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Azure, Microsoft Entra ID & Microsoft 365 Security Configuration Checklist</title>
+</head>
+<body>
+<h1 id="azure-microsoft-entra-id-microsoft-365-security-configuration-checklist">Azure, Microsoft Entra ID &amp; Microsoft 365 Security Configuration Checklist</h1>
+<blockquote>
+<p><strong>Last Updated:</strong> January 2026
+<strong>Purpose:</strong> Comprehensive security configuration checklist for Azure, Microsoft Entra ID (formerly Azure Active Directory), and Microsoft 365/Office 365 environments.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-microsoft-entra-id-identity--access">Microsoft Entra ID (Identity &amp; Access)</a></li>
+<li><a href="#2-conditional-access-policies">Conditional Access Policies</a></li>
+<li><a href="#3-privileged-identity-management-pim">Privileged Identity Management (PIM)</a></li>
+<li><a href="#4-azure-infrastructure-security">Azure Infrastructure Security</a></li>
+<li><a href="#5-azure-network-security">Azure Network Security</a></li>
+<li><a href="#6-azure-data-protection--encryption">Azure Data Protection &amp; Encryption</a></li>
+<li><a href="#7-microsoft-defender-for-cloud">Microsoft Defender for Cloud</a></li>
+<li><a href="#8-microsoft-365-email-security">Microsoft 365 Email Security</a></li>
+<li><a href="#9-sharepoint--onedrive-security">SharePoint &amp; OneDrive Security</a></li>
+<li><a href="#10-microsoft-teams-security">Microsoft Teams Security</a></li>
+<li><a href="#11-data-loss-prevention-dlp">Data Loss Prevention (DLP)</a></li>
+<li><a href="#12-audit--monitoring">Audit &amp; Monitoring</a></li>
+<li><a href="#13-microsoft-secure-score">Microsoft Secure Score</a></li>
+<li><a href="#14-cisa-scuba-compliance">CISA SCuBA Compliance</a></li>
+</ol>
+<hr />
+<h2 id="1-microsoft-entra-id-identity-access">1. Microsoft Entra ID (Identity &amp; Access)</h2>
+<h3 id="multi-factor-authentication-mfa">Multi-Factor Authentication (MFA)</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable MFA for all users</strong> - MFA blocks 99.9% of identity attacks
+  <a href="https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-getstarted">Microsoft Learn: MFA Setup</a></p>
+</li>
+<li>
+<p>[ ] <strong>Prioritize phishing-resistant MFA methods:</strong></p>
+</li>
+<li>[ ] FIDO2 security keys</li>
+<li>[ ] Passkeys</li>
+<li>[ ] Windows Hello for Business</li>
+<li>
+<p>[ ] Certificate-based authentication
+  <a href="https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strengths">Microsoft Learn: Phishing-Resistant MFA</a></p>
+</li>
+<li>
+<p>[ ] <strong>Disable SMS and voice call as MFA methods</strong> (low-security options)
+  <a href="https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods">Microsoft Learn: Authentication Methods</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block legacy authentication protocols</strong> (POP3, IMAP, SMTP AUTH) - these don't support MFA
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/block-legacy-authentication">Microsoft Learn: Block Legacy Auth</a></p>
+</li>
+</ul>
+<h3 id="user-application-permissions">User &amp; Application Permissions</h3>
+<ul>
+<li>
+<p>[ ] <strong>Restrict non-admin users from creating tenants</strong> - Set to "Yes"
+  <a href="https://learn.microsoft.com/en-us/entra/fundamentals/users-default-permissions">Microsoft Learn: Default User Permissions</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure application consent settings:</strong></p>
+</li>
+<li>[ ] Set to "Allow user consent for apps from verified publishers, for selected permissions" OR</li>
+<li>
+<p>[ ] Set to "Let Microsoft manage your consent settings (Recommended)"
+  <a href="https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-user-consent">Microsoft Learn: App Consent</a></p>
+</li>
+<li>
+<p>[ ] <strong>Restrict device join permissions:</strong></p>
+</li>
+<li>[ ] Set "Users may join devices to Microsoft Entra" to "Selected" groups</li>
+<li>[ ] Enable "Require MFA to register or join devices with Microsoft Entra"
+  <a href="https://learn.microsoft.com/en-us/entra/identity/devices/manage-device-identities">Microsoft Learn: Device Settings</a></li>
+</ul>
+<h3 id="password-credential-security">Password &amp; Credential Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable password hash synchronization</strong> - Even if using federation, configure as backup
+  <a href="https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/whatis-phs">Microsoft Learn: Password Hash Sync</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure self-service password reset (SSPR)</strong> with strong authentication methods
+  <a href="https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-deployment">Microsoft Learn: SSPR</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Microsoft Entra Password Protection</strong> - Block common and custom banned passwords
+  <a href="https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad">Microsoft Learn: Password Protection</a></p>
+</li>
+</ul>
+<h3 id="hybrid-identity-security">Hybrid Identity Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Do NOT synchronize highly privileged on-premises accounts</strong> to Entra ID
+  <a href="https://learn.microsoft.com/en-us/entra/architecture/secure-best-practices">Microsoft Learn: Hybrid Security</a></p>
+</li>
+<li>
+<p>[ ] <strong>Ensure Global Administrator accounts are cloud-only</strong> - No ties to on-premises AD
+  <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/security-planning">Microsoft Learn: Privileged Access</a></p>
+</li>
+</ul>
+<h3 id="emergency-access-break-glass-accounts">Emergency Access (Break Glass) Accounts</h3>
+<ul>
+<li>[ ] <strong>Create at least 2 emergency access accounts</strong> with:</li>
+<li>[ ] Highly protected Global Administrator rights</li>
+<li>[ ] Cloud-only authentication (not federated)</li>
+<li>[ ] Excluded from Conditional Access policies</li>
+<li>[ ] Different authentication methods than regular admins</li>
+<li>[ ] Monitored for any sign-in activity
+  <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/security-emergency-access">Microsoft Learn: Emergency Access</a></li>
+</ul>
+<hr />
+<h2 id="2-conditional-access-policies">2. Conditional Access Policies</h2>
+<h3 id="core-policies">Core Policies</h3>
+<ul>
+<li>
+<p>[ ] <strong>Require MFA for all users accessing all resources</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-all-users-mfa">Microsoft Learn: Require MFA</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require MFA for all administrators</strong> (especially for Microsoft admin portals)
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-admin-mfa">Microsoft Learn: Admin MFA</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block access for high-risk sign-ins</strong> using Identity Protection
+  <a href="https://learn.microsoft.com/en-us/entra/id-protection/howto-identity-protection-configure-risk-policies">Microsoft Learn: Risk-Based Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require password change for high-risk users</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/id-protection/concept-identity-protection-policies">Microsoft Learn: User Risk Policy</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require compliant or Hybrid Azure AD joined devices</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-compliant-device">Microsoft Learn: Device Compliance</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block access from unauthorized geographic locations</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-location">Microsoft Learn: Named Locations</a></p>
+</li>
+</ul>
+<h3 id="policy-configuration-best-practices">Policy Configuration Best Practices</h3>
+<ul>
+<li>
+<p>[ ] <strong>Use Conditional Access templates</strong> aligned with Microsoft Zero Trust recommendations
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-policy-common">Microsoft Learn: CA Templates</a></p>
+</li>
+<li>
+<p>[ ] <strong>Deploy policies in Report-Only mode first</strong> before enforcement
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-report-only">Microsoft Learn: Report-Only Mode</a></p>
+</li>
+<li>
+<p>[ ] <strong>Exclude break-glass accounts</strong> from all CA policies
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/plan-conditional-access">Microsoft Learn: CA Best Practices</a></p>
+</li>
+<li>
+<p>[ ] <strong>Stay within 195 policy limit</strong> per tenant
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/plan-conditional-access">Microsoft Learn: CA Limits</a></p>
+</li>
+<li>
+<p>[ ] <strong>Review Microsoft-managed policies</strong> and adopt where appropriate
+  <a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/managed-policies">Microsoft Learn: Managed Policies</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="3-privileged-identity-management-pim">3. Privileged Identity Management (PIM)</h2>
+<h3 id="just-in-time-access">Just-in-Time Access</h3>
+<ul>
+<li>
+<p>[ ] <strong>Implement "no standing access"</strong> - No permanent privileged role assignments
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure">Microsoft Learn: PIM Overview</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure just-in-time activation</strong> for all privileged roles
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-activate-role">Microsoft Learn: PIM Activation</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require MFA for all role activations</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-configure-role-settings">Microsoft Learn: PIM Settings</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require approval workflow</strong> for sensitive role activations
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-approval-workflow">Microsoft Learn: Approval Workflow</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require justification</strong> for all role activations
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-change-default-settings">Microsoft Learn: Role Settings</a></p>
+</li>
+<li>
+<p>[ ] <strong>Set limited activation duration</strong> (e.g., 1-8 hours maximum)
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure">Microsoft Learn: Time-Bound Access</a></p>
+</li>
+</ul>
+<h3 id="monitoring-review">Monitoring &amp; Review</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable alerts for privileged role activations</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-how-to-configure-security-alerts">Microsoft Learn: PIM Alerts</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure regular access reviews</strong> for privileged roles
+  <a href="https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-create-roles-and-resource-roles-review">Microsoft Learn: Access Reviews</a></p>
+</li>
+<li>
+<p>[ ] <strong>Monitor all 28 Microsoft-tagged "Privileged" roles</strong> (as of October 2025)
+  <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference">Microsoft Learn: Built-in Roles</a></p>
+</li>
+<li>
+<p>[ ] <strong>Limit Global Administrators</strong> to 5 or fewer
+  <a href="https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/best-practices">Microsoft Learn: Best Practices</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="4-azure-infrastructure-security">4. Azure Infrastructure Security</h2>
+<h3 id="virtual-machine-security">Virtual Machine Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable Trusted Launch</strong> for all new Gen2 VMs (default since 2024)
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/trusted-launch">Microsoft Learn: Trusted Launch</a></p>
+</li>
+<li>
+<p>[ ] <strong>Consider Confidential VMs</strong> for sensitive workloads (AMD SEV-SNP)
+  <a href="https://learn.microsoft.com/en-us/azure/confidential-computing/confidential-vm-overview">Microsoft Learn: Confidential Computing</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable encryption at host</strong> for end-to-end VM data encryption
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption">Microsoft Learn: Encryption at Host</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use Azure Disk Encryption</strong> or Server-Side Encryption with customer-managed keys
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview">Microsoft Learn: Disk Encryption</a></p>
+</li>
+<li>
+<p>[ ] <strong>Apply OS security baselines</strong> using Defender for Cloud recommendations
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/apply-security-baseline">Microsoft Learn: Security Baselines</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Azure Update Management</strong> for automated patching
+  <a href="https://learn.microsoft.com/en-us/azure/update-manager/overview">Microsoft Learn: Update Management</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Just-in-Time (JIT) VM access</strong> - Reduce exposure to management ports
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/just-in-time-access-usage">Microsoft Learn: JIT Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use hardened VM images</strong> from Azure Marketplace (CIS benchmarks)
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/linux/tutorial-secure-web-server">Microsoft Learn: Hardened Images</a></p>
+</li>
+</ul>
+<h3 id="resource-security">Resource Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable Azure Resource Locks</strong> on critical resources
+  <a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources">Microsoft Learn: Resource Locks</a></p>
+</li>
+<li>
+<p>[ ] <strong>Implement Azure Policy</strong> for enforcing security standards at scale
+  <a href="https://learn.microsoft.com/en-us/azure/governance/policy/overview">Microsoft Learn: Azure Policy</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use Azure Blueprints</strong> for consistent security deployment
+  <a href="https://learn.microsoft.com/en-us/azure/governance/blueprints/overview">Microsoft Learn: Blueprints</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="5-azure-network-security">5. Azure Network Security</h2>
+<h3 id="network-security-groups-nsgs">Network Security Groups (NSGs)</h3>
+<ul>
+<li>
+<p>[ ] <strong>Apply NSGs to all subnets and NICs</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview">Microsoft Learn: NSG Overview</a></p>
+</li>
+<li>
+<p>[ ] <strong>Review NSG rules regularly</strong> - Remove overly permissive rules
+  <a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/network-best-practices">Microsoft Learn: NSG Best Practices</a></p>
+</li>
+<li>
+<p>[ ] <strong>Never allow inbound from 'Any' or 'Internet'</strong> to management ports
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group">Microsoft Learn: NSG Rules</a></p>
+</li>
+<li>
+<p>[ ] <strong>Migrate from NSG flow logs to Virtual Network flow logs</strong> (NSG flow logs deprecated after June 30, 2025)
+  <a href="https://learn.microsoft.com/en-us/azure/network-watcher/vnet-flow-logs-overview">Microsoft Learn: VNet Flow Logs</a></p>
+</li>
+</ul>
+<h3 id="azure-firewall-perimeter-security">Azure Firewall &amp; Perimeter Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Deploy Azure Firewall</strong> for centralized network security
+  <a href="https://learn.microsoft.com/en-us/azure/firewall/overview">Microsoft Learn: Azure Firewall</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Azure DDoS Protection</strong> for public-facing resources
+  <a href="https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-overview">Microsoft Learn: DDoS Protection</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use Private Endpoints</strong> for Azure PaaS services
+  <a href="https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview">Microsoft Learn: Private Endpoints</a></p>
+</li>
+<li>
+<p>[ ] <strong>Implement Network Security Perimeter</strong> (Preview) for PaaS resources
+  <a href="https://learn.microsoft.com/en-us/azure/private-link/network-security-perimeter-concepts">Microsoft Learn: Network Perimeter</a></p>
+</li>
+</ul>
+<h3 id="2025-important-changes">2025 Important Changes</h3>
+<ul>
+<li>
+<p>[ ] <strong>Upgrade from Basic to Standard SKU public IPs</strong> (Basic SKU retired September 30, 2025)
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses">Microsoft Learn: Public IP SKUs</a></p>
+</li>
+<li>
+<p>[ ] <strong>Plan for removal of default outbound internet access</strong> (September 30, 2025)
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access">Microsoft Learn: Default Outbound</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="6-azure-data-protection-encryption">6. Azure Data Protection &amp; Encryption</h2>
+<h3 id="encryption-at-rest">Encryption at Rest</h3>
+<ul>
+<li>
+<p>[ ] <strong>Verify Storage Service Encryption (SSE)</strong> is enabled (default with Microsoft-managed keys)
+  <a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-service-encryption">Microsoft Learn: Storage Encryption</a></p>
+</li>
+<li>
+<p>[ ] <strong>Consider customer-managed keys (CMK)</strong> for sensitive data using Azure Key Vault
+  <a href="https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview">Microsoft Learn: CMK</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Azure Disk Encryption</strong> for VM OS and data disks
+  <a href="https://learn.microsoft.com/en-us/azure/virtual-machines/disk-encryption-overview">Microsoft Learn: ADE</a></p>
+</li>
+</ul>
+<h3 id="encryption-in-transit">Encryption in Transit</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enforce TLS 1.2 or later</strong> for all connections (required by August 31, 2025)
+  <a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/data-encryption-best-practices">Microsoft Learn: TLS Requirements</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable HTTPS-only access</strong> for storage accounts
+  <a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-require-secure-transfer">Microsoft Learn: Secure Transfer</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use Azure VPN Gateway or ExpressRoute</strong> for hybrid connectivity
+  <a href="https://learn.microsoft.com/en-us/azure/vpn-gateway/vpn-gateway-about-vpngateways">Microsoft Learn: VPN Gateway</a></p>
+</li>
+</ul>
+<h3 id="azure-key-vault-security">Azure Key Vault Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Use Azure Key Vault Premium or Managed HSM</strong> for encryption key management
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/best-practices">Microsoft Learn: Key Vault Best Practices</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable soft-delete and purge protection</strong> on Key Vault
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/soft-delete-overview">Microsoft Learn: Soft Delete</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure key rotation policies</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/keys/how-to-configure-key-rotation">Microsoft Learn: Key Rotation</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Key Vault access logging</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/logging">Microsoft Learn: KV Logging</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use RBAC for Key Vault access control</strong> (instead of access policies)
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide">Microsoft Learn: KV RBAC</a></p>
+</li>
+<li>
+<p>[ ] <strong>Backup Key Vault secrets/keys</strong> that cannot be recreated
+  <a href="https://learn.microsoft.com/en-us/azure/key-vault/general/backup">Microsoft Learn: Backup</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="7-microsoft-defender-for-cloud">7. Microsoft Defender for Cloud</h2>
+<h3 id="enable-protection-plans">Enable Protection Plans</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable Defender for Cloud</strong> on all subscriptions
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/enable-enhanced-security">Microsoft Learn: Enable Defender</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender CSPM</strong> (Cloud Security Posture Management)
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/concept-cloud-security-posture-management">Microsoft Learn: Defender CSPM</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender for Servers</strong> (Plan 1 or Plan 2)
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-servers-introduction">Microsoft Learn: Defender for Servers</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender for Storage</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-storage-introduction">Microsoft Learn: Defender for Storage</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender for Containers</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-introduction">Microsoft Learn: Defender for Containers</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender for Key Vault</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-key-vault-introduction">Microsoft Learn: Defender for KV</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Defender for SQL</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-sql-introduction">Microsoft Learn: Defender for SQL</a></p>
+</li>
+</ul>
+<h3 id="configuration">Configuration</h3>
+<ul>
+<li>
+<p>[ ] <strong>Apply Microsoft Cloud Security Benchmark (MCSB)</strong> as default standard
+  <a href="https://learn.microsoft.com/en-us/security/benchmark/azure/overview">Microsoft Learn: MCSB</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure auto-provisioning</strong> for agents and extensions
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/monitoring-components">Microsoft Learn: Auto-Provisioning</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Attack Disruption</strong> with "Full - remediate threats automatically"
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/automatic-attack-disruption">Microsoft Learn: Attack Disruption</a></p>
+</li>
+<li>
+<p>[ ] <strong>Review and remediate security recommendations</strong> by risk priority
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/review-security-recommendations">Microsoft Learn: Recommendations</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure security alerts and notifications</strong>
+  <a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/configure-email-notifications">Microsoft Learn: Alerts</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="8-microsoft-365-email-security">8. Microsoft 365 Email Security</h2>
+<h3 id="email-authentication-spf-dkim-dmarc">Email Authentication (SPF, DKIM, DMARC)</h3>
+<ul>
+<li>
+<p>[ ] <strong>Configure SPF record</strong> for your domain with <code>-all</code> (hard fail)
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-spf-configure">Microsoft Learn: SPF Setup</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable DKIM signing</strong> for all domains (disabled by default)
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dkim-configure">Microsoft Learn: DKIM Setup</a></p>
+</li>
+<li>
+<p>[ ] <strong>Implement DMARC</strong> - Start with <code>p=none</code>, progress to <code>p=quarantine</code> then <code>p=reject</code>
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-dmarc-configure">Microsoft Learn: DMARC Setup</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure DKIM and SPF for third-party email services</strong> (Mailchimp, Salesforce, etc.)
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-about">Microsoft Learn: Third-Party Email</a></p>
+</li>
+<li>
+<p>[ ] <strong>Use subdomains for bulk email services</strong> to protect main domain reputation
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-about">Microsoft Learn: Email Best Practices</a></p>
+</li>
+</ul>
+<h3 id="microsoft-defender-for-office-365">Microsoft Defender for Office 365</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable Safe Attachments</strong> - Scan email attachments for malware
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/safe-attachments-about">Microsoft Learn: Safe Attachments</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Safe Links</strong> - Scan URLs at time of click
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/safe-links-about">Microsoft Learn: Safe Links</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure anti-phishing policies</strong> with:</p>
+</li>
+<li>[ ] Mailbox intelligence</li>
+<li>[ ] Impersonation protection</li>
+<li>
+<p>[ ] Spoof intelligence
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/anti-phishing-protection-about">Microsoft Learn: Anti-Phishing</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Zero-hour Auto Purge (ZAP)</strong> for spam and malware
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/zero-hour-auto-purge">Microsoft Learn: ZAP</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure preset security policies</strong> (Standard or Strict)
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/preset-security-policies">Microsoft Learn: Preset Policies</a></p>
+</li>
+</ul>
+<h3 id="exchange-online-security">Exchange Online Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Disable automatic email forwarding</strong> to external addresses
+  <a href="https://learn.microsoft.com/en-us/exchange/security-and-compliance/mail-flow-rules/mail-flow-rules">Microsoft Learn: Mail Flow Rules</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable mailbox auditing</strong> (enabled by default since 2019)
+  <a href="https://learn.microsoft.com/en-us/purview/audit-mailboxes">Microsoft Learn: Mailbox Auditing</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure connection filtering</strong> to block known malicious IPs
+  <a href="https://learn.microsoft.com/en-us/defender-office-365/connection-filter-policies-configure">Microsoft Learn: Connection Filtering</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="9-sharepoint-onedrive-security">9. SharePoint &amp; OneDrive Security</h2>
+<h3 id="external-sharing-controls">External Sharing Controls</h3>
+<ul>
+<li>[ ] <strong>Limit SharePoint external sharing</strong> to:</li>
+<li>[ ] "Only people in your organization" OR</li>
+<li>
+<p>[ ] "Existing guests"
+  <a href="https://learn.microsoft.com/en-us/sharepoint/turn-external-sharing-on-or-off">Microsoft Learn: Sharing Settings</a></p>
+</li>
+<li>
+<p>[ ] <strong>Limit OneDrive external sharing</strong> to same or more restrictive than SharePoint
+  <a href="https://learn.microsoft.com/en-us/sharepoint/manage-sharing">Microsoft Learn: OneDrive Sharing</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block sharing with specific domains</strong> (competitors, high-risk countries)
+  <a href="https://learn.microsoft.com/en-us/sharepoint/restricted-domains-sharing">Microsoft Learn: Domain Restrictions</a></p>
+</li>
+<li>
+<p>[ ] <strong>Set expiration dates</strong> for guest access and sharing links
+  <a href="https://learn.microsoft.com/en-us/sharepoint/external-sharing-overview">Microsoft Learn: Guest Expiration</a></p>
+</li>
+<li>
+<p>[ ] <strong>Disable anonymous sharing links</strong> for sensitive sites
+  <a href="https://learn.microsoft.com/en-us/sharepoint/change-external-sharing-site">Microsoft Learn: Anonymous Links</a></p>
+</li>
+</ul>
+<h3 id="access-controls">Access Controls</h3>
+<ul>
+<li>
+<p>[ ] <strong>Configure restricted access control</strong> to limit access to specific security groups
+  <a href="https://learn.microsoft.com/en-us/sharepoint/limit-access">Microsoft Learn: Restrict Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable idle session sign-out</strong> for SharePoint and OneDrive
+  <a href="https://learn.microsoft.com/en-us/sharepoint/sign-out-inactive-users">Microsoft Learn: Idle Timeout</a></p>
+</li>
+<li>
+<p>[ ] <strong>Require managed devices</strong> for access to sensitive data
+  <a href="https://learn.microsoft.com/en-us/sharepoint/control-access-from-unmanaged-devices">Microsoft Learn: Device Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure Information Barriers</strong> if needed for compliance
+  <a href="https://learn.microsoft.com/en-us/purview/information-barriers-sharepoint">Microsoft Learn: Info Barriers</a></p>
+</li>
+</ul>
+<h3 id="site-security">Site Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Apply sensitivity labels</strong> to sites for automatic protection
+  <a href="https://learn.microsoft.com/en-us/purview/sensitivity-labels-teams-groups-sites">Microsoft Learn: Site Labels</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable versioning</strong> to protect against ransomware
+  <a href="https://learn.microsoft.com/en-us/sharepoint/governance/versioning-content-approval-retention">Microsoft Learn: Versioning</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure site access requests</strong> and approvals
+  <a href="https://learn.microsoft.com/en-us/sharepoint/set-up-or-change-the-access-requests-list">Microsoft Learn: Access Requests</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="10-microsoft-teams-security">10. Microsoft Teams Security</h2>
+<h3 id="external-guest-access">External &amp; Guest Access</h3>
+<ul>
+<li>
+<p>[ ] <strong>Review and configure external access settings</strong> - Control federation with other organizations
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/manage-external-access">Microsoft Learn: External Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure guest access policies</strong> - Limit what guests can do
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/guest-access">Microsoft Learn: Guest Access</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block guest access</strong> if not required by business
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/set-up-guests">Microsoft Learn: Guest Settings</a></p>
+</li>
+</ul>
+<h3 id="meeting-security">Meeting Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Configure meeting policies</strong> to control who can present, record, etc.
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/meeting-policies-overview">Microsoft Learn: Meeting Policies</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable lobby</strong> for external participants
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/who-can-bypass-meeting-lobby">Microsoft Learn: Lobby</a></p>
+</li>
+<li>
+<p>[ ] <strong>Disable anonymous meeting join</strong> if not needed
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/anonymous-users-in-meetings">Microsoft Learn: Anonymous Join</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure watermarking</strong> for sensitive meetings (E5)
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/watermark-meeting-content-video">Microsoft Learn: Watermarks</a></p>
+</li>
+</ul>
+<h3 id="app-bot-security">App &amp; Bot Security</h3>
+<ul>
+<li>
+<p>[ ] <strong>Control which apps can be installed</strong> in Teams
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/manage-apps">Microsoft Learn: App Policies</a></p>
+</li>
+<li>
+<p>[ ] <strong>Block specific third-party apps</strong> that pose security risks
+  <a href="https://learn.microsoft.com/en-us/microsoftteams/manage-apps">Microsoft Learn: Block Apps</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="11-data-loss-prevention-dlp">11. Data Loss Prevention (DLP)</h2>
+<h3 id="policy-configuration">Policy Configuration</h3>
+<ul>
+<li>[ ] <strong>Create DLP policies</strong> for sensitive information types:</li>
+<li>[ ] Credit card numbers</li>
+<li>[ ] Social Security Numbers</li>
+<li>[ ] Health records (HIPAA)</li>
+<li>[ ] Financial data</li>
+<li>
+<p>[ ] Custom sensitive data
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-learn-about-dlp">Microsoft Learn: DLP Overview</a></p>
+</li>
+<li>
+<p>[ ] <strong>Apply DLP to all locations:</strong></p>
+</li>
+<li>[ ] Exchange Online</li>
+<li>[ ] SharePoint Online</li>
+<li>[ ] OneDrive</li>
+<li>[ ] Teams</li>
+<li>[ ] Endpoints (Windows/macOS)</li>
+<li>
+<p>[ ] Microsoft 365 Copilot (new in 2025)
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-policy-reference">Microsoft Learn: DLP Locations</a></p>
+</li>
+<li>
+<p>[ ] <strong>Deploy policies in simulation mode first</strong> before enforcement
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-test-dlp-policies">Microsoft Learn: Test Mode</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure policy tips</strong> to educate users
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-policy-tips-reference">Microsoft Learn: Policy Tips</a></p>
+</li>
+</ul>
+<h3 id="advanced-dlp-features">Advanced DLP Features</h3>
+<ul>
+<li>
+<p>[ ] <strong>Enable Adaptive Protection</strong> integration with Insider Risk Management
+  <a href="https://learn.microsoft.com/en-us/purview/insider-risk-management-adaptive-protection">Microsoft Learn: Adaptive Protection</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure DLP for Microsoft 365 Copilot</strong> (new in 2025)
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-microsoft365-copilot-location-learn-about">Microsoft Learn: DLP for Copilot</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable DLP for Windows Recall</strong> on Copilot+ PCs
+  <a href="https://learn.microsoft.com/en-us/purview/dlp-recall-get-started">Microsoft Learn: DLP for Recall</a></p>
+</li>
+</ul>
+<h3 id="sensitivity-labels">Sensitivity Labels</h3>
+<ul>
+<li>
+<p>[ ] <strong>Create and publish sensitivity labels</strong> for document classification
+  <a href="https://learn.microsoft.com/en-us/purview/sensitivity-labels">Microsoft Learn: Sensitivity Labels</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure automatic labeling</strong> for sensitive content
+  <a href="https://learn.microsoft.com/en-us/purview/apply-sensitivity-label-automatically">Microsoft Learn: Auto-Labeling</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable label encryption</strong> for highly confidential data
+  <a href="https://learn.microsoft.com/en-us/purview/encryption-sensitivity-labels">Microsoft Learn: Label Encryption</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="12-audit-monitoring">12. Audit &amp; Monitoring</h2>
+<h3 id="unified-audit-logging">Unified Audit Logging</h3>
+<ul>
+<li>
+<p>[ ] <strong>Verify Unified Audit Logging is enabled</strong> (default for most tenants)
+  PowerShell: <code>Get-AdminAuditLogConfig | FL UnifiedAuditLogIngestionEnabled</code>
+  <a href="https://learn.microsoft.com/en-us/purview/audit-log-enable-disable">Microsoft Learn: Enable Auditing</a></p>
+</li>
+<li>
+<p>[ ] <strong>Understand retention periods:</strong></p>
+</li>
+<li>[ ] E3/Business Premium: 180 days (changed from 90 days in Oct 2023)</li>
+<li>
+<p>[ ] E5: 1 year default, extendable with retention policies
+  <a href="https://learn.microsoft.com/en-us/purview/audit-log-retention-policies">Microsoft Learn: Audit Retention</a></p>
+</li>
+<li>
+<p>[ ] <strong>Create custom audit log retention policies</strong> for critical activities
+  <a href="https://learn.microsoft.com/en-us/purview/audit-log-retention-policies">Microsoft Learn: Retention Policies</a></p>
+</li>
+<li>
+<p>[ ] <strong>Monitor for audit logging being disabled</strong> (indicator of compromise)
+  <a href="https://learn.microsoft.com/en-us/purview/audit-search">Microsoft Learn: Search Audit Log</a></p>
+</li>
+</ul>
+<h3 id="siem-integration">SIEM Integration</h3>
+<ul>
+<li>
+<p>[ ] <strong>Forward logs to Azure Monitor / Log Analytics</strong>
+  <a href="https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-integrate-activity-logs-with-azure-monitor-logs">Microsoft Learn: Azure Monitor</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure Microsoft Sentinel</strong> for advanced threat detection
+  <a href="https://learn.microsoft.com/en-us/azure/sentinel/overview">Microsoft Learn: Sentinel</a></p>
+</li>
+<li>
+<p>[ ] <strong>Enable Office 365 connector</strong> in Sentinel for M365 log ingestion
+  <a href="https://learn.microsoft.com/en-us/azure/sentinel/data-connectors/microsoft-365">Microsoft Learn: O365 Connector</a></p>
+</li>
+<li>
+<p>[ ] <strong>Create detection rules</strong> for suspicious activities
+  <a href="https://learn.microsoft.com/en-us/azure/sentinel/detect-threats-built-in">Microsoft Learn: Analytics Rules</a></p>
+</li>
+</ul>
+<h3 id="alert-policies">Alert Policies</h3>
+<ul>
+<li>
+<p>[ ] <strong>Review and customize default alert policies</strong>
+  <a href="https://learn.microsoft.com/en-us/purview/alert-policies">Microsoft Learn: Alert Policies</a></p>
+</li>
+<li>
+<p>[ ] <strong>Create custom alerts</strong> for organization-specific risks
+  <a href="https://learn.microsoft.com/en-us/purview/alert-policies">Microsoft Learn: Custom Alerts</a></p>
+</li>
+<li>
+<p>[ ] <strong>Configure email notifications</strong> for critical alerts
+  <a href="https://learn.microsoft.com/en-us/purview/alert-policies">Microsoft Learn: Notifications</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="13-microsoft-secure-score">13. Microsoft Secure Score</h2>
+<h3 id="monitoring">Monitoring</h3>
+<ul>
+<li>
+<p>[ ] <strong>Access Secure Score</strong> in Microsoft Defender portal
+  <a href="https://security.microsoft.com/securescore">Microsoft Secure Score</a></p>
+</li>
+<li>
+<p>[ ] <strong>Target score above 80%</strong> for strong security posture
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score">Microsoft Learn: Secure Score</a></p>
+</li>
+<li>
+<p>[ ] <strong>Review score trends</strong> over time using new trend chart feature (2025)
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score-history-metrics-trends">Microsoft Learn: Track History</a></p>
+</li>
+</ul>
+<h3 id="focus-areas-2025-categorization">Focus Areas (2025 Categorization)</h3>
+<ul>
+<li>[ ] <strong>Identity</strong> - MFA, Conditional Access, PIM</li>
+<li>[ ] <strong>Device</strong> - Compliance policies, Intune baselines, updates</li>
+<li>[ ] <strong>Apps</strong> - App protection, consent controls</li>
+<li>[ ] <strong>Data</strong> - DLP, sensitivity labels, encryption
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score-improvement-actions">Microsoft Learn: Improvement Actions</a></li>
+</ul>
+<h3 id="high-impact-actions">High-Impact Actions</h3>
+<ul>
+<li>
+<p>[ ] <strong>Implement all "High Impact" recommendations first</strong>
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score-improvement-actions">Microsoft Learn: Prioritization</a></p>
+</li>
+<li>
+<p>[ ] <strong>Address identity-related recommendations</strong> - Most impactful category
+  <a href="https://learn.microsoft.com/en-us/defender-xdr/microsoft-secure-score-improvement-actions">Microsoft Learn: Identity Actions</a></p>
+</li>
+<li>
+<p>[ ] <strong>Document score for cyber insurance</strong> requirements (increasingly important in 2025)
+  <a href="https://www.coreview.com/blog/secure-score-playbook">CoreView: Secure Score Playbook</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="14-cisa-scuba-compliance">14. CISA SCuBA Compliance</h2>
+<h3 id="overview">Overview</h3>
+<p>The Secure Cloud Business Applications (SCuBA) project provides secure configuration baselines for Microsoft 365. While mandatory for US federal agencies (BOD 25-01), all organizations can benefit from these baselines.</p>
+<p><strong>Compliance Deadlines (Federal Agencies):</strong>
+- February 21, 2025: Identify all Microsoft 365 cloud tenants
+- June 20, 2025: Implement SCuBA secure configuration baselines</p>
+<h3 id="scuba-baselines-by-service">SCuBA Baselines by Service</h3>
+<ul>
+<li>
+<p>[ ] <strong>Microsoft Entra ID baseline</strong> - Identity and access controls
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/aad.md">CISA: Entra ID Baseline</a></p>
+</li>
+<li>
+<p>[ ] <strong>Microsoft Defender for Office 365 baseline</strong> - Email protection
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/defender.md">CISA: Defender Baseline</a></p>
+</li>
+<li>
+<p>[ ] <strong>Exchange Online baseline</strong> - Mail flow and mailbox security
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/exo.md">CISA: Exchange Baseline</a></p>
+</li>
+<li>
+<p>[ ] <strong>Microsoft Teams baseline</strong> - Collaboration security
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/teams.md">CISA: Teams Baseline</a></p>
+</li>
+<li>
+<p>[ ] <strong>SharePoint Online / OneDrive baseline</strong> - File sharing security
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/sharepoint.md">CISA: SharePoint Baseline</a></p>
+</li>
+<li>
+<p>[ ] <strong>Power Platform baseline</strong> - Low-code app security
+  <a href="https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/baselines/powerplatform.md">CISA: Power Platform Baseline</a></p>
+</li>
+</ul>
+<h3 id="scubagear-assessment-tool">ScubaGear Assessment Tool</h3>
+<ul>
+<li>
+<p>[ ] <strong>Install ScubaGear</strong> from PowerShell Gallery:
+  <code>powershell
+  Install-Module -Name ScubaGear</code>
+  <a href="https://github.com/cisagov/ScubaGear">GitHub: ScubaGear</a></p>
+</li>
+<li>
+<p>[ ] <strong>Run assessment</strong> against your tenant
+  <a href="https://www.cisa.gov/resources-tools/services/secure-cloud-business-applications-scuba-project">CISA: SCuBA Project</a></p>
+</li>
+<li>
+<p>[ ] <strong>Review HTML/JSON/CSV reports</strong> for compliance gaps
+  <a href="https://github.com/cisagov/ScubaGear#readme">CISA: Using ScubaGear</a></p>
+</li>
+<li>
+<p>[ ] <strong>Remediate findings</strong> based on priority and risk
+  <a href="https://www.cisa.gov/news-events/news/cisa-finalizes-microsoft-365-secure-configuration-baselines">CISA: Baselines</a></p>
+</li>
+</ul>
+<hr />
+<h2 id="quick-reference-key-resources">Quick Reference: Key Resources</h2>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Microsoft Entra Admin Center</td>
+<td>https://entra.microsoft.com</td>
+</tr>
+<tr>
+<td>Microsoft Defender Portal</td>
+<td>https://security.microsoft.com</td>
+</tr>
+<tr>
+<td>Microsoft Purview Portal</td>
+<td>https://purview.microsoft.com</td>
+</tr>
+<tr>
+<td>Azure Portal</td>
+<td>https://portal.azure.com</td>
+</tr>
+<tr>
+<td>Microsoft Secure Score</td>
+<td>https://security.microsoft.com/securescore</td>
+</tr>
+<tr>
+<td>CISA SCuBA Project</td>
+<td>https://www.cisa.gov/resources-tools/services/secure-cloud-business-applications-scuba-project</td>
+</tr>
+<tr>
+<td>ScubaGear GitHub</td>
+<td>https://github.com/cisagov/ScubaGear</td>
+</tr>
+<tr>
+<td>Microsoft Cloud Security Benchmark</td>
+<td>https://learn.microsoft.com/en-us/security/benchmark/azure/overview</td>
+</tr>
+<tr>
+<td>Microsoft Security Best Practices</td>
+<td>https://learn.microsoft.com/en-us/azure/security/fundamentals/best-practices-and-patterns</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="sources">Sources</h2>
+<p>This checklist was compiled from the following authoritative sources:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/best-practices-and-patterns">Microsoft Learn - Security Best Practices and Patterns</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/identity-management-best-practices">Microsoft Learn - Azure Identity &amp; Access Security Best Practices</a></li>
+<li><a href="https://learn.microsoft.com/en-us/entra/architecture/secure-best-practices">Microsoft Learn - Best Practices to Secure with Microsoft Entra ID</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/data-encryption-best-practices">Microsoft Learn - Data Encryption Best Practices</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/security/fundamentals/network-best-practices">Microsoft Learn - Network Security Best Practices</a></li>
+<li><a href="https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-cloud-introduction">Microsoft Learn - Microsoft Defender for Cloud</a></li>
+<li><a href="https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview">Microsoft Learn - Conditional Access</a></li>
+<li><a href="https://learn.microsoft.com/en-us/defender-office-365/email-authentication-about">Microsoft Learn - Email Authentication</a></li>
+<li><a href="https://www.cisa.gov/resources-tools/services/secure-cloud-business-applications-scuba-project">CISA - Secure Cloud Business Applications (SCuBA)</a></li>
+<li><a href="https://www.cisa.gov/news-events/news/cisa-finalizes-microsoft-365-secure-configuration-baselines">CISA - Microsoft 365 Secure Configuration Baselines</a></li>
+<li><a href="https://www.sentinelone.com/cybersecurity-101/cloud-security/azure-security-best-practices/">SentinelOne - Azure Security Best Practices 2026</a></li>
+<li><a href="https://netrixglobal.com/blog/cybersecurity/microsoft-365-security-hardening-checklist/">Netrix Global - Microsoft 365 Security Hardening Checklist</a></li>
+<li><a href="https://www.coreview.com/blog/secure-score-playbook">CoreView - 2025 Microsoft Secure Score Playbook</a></li>
+<li><a href="https://lanet.co.uk/blog/microsoft-entra-id-security-baseline/">LA NET Azure - Microsoft Entra ID Security Baseline 2025</a></li>
+<li><a href="https://paradigmsecurity.nl/blog/conditional-access-policies-for-enhanced-security/">Paradigm Security - Top 10 Conditional Access Policies 2025</a></li>
+<li><a href="https://jeffreyappel.nl/2025-microsoft-defender-optimization-configuration-cheat-sheet/">Jeffrey Appel - 2025 Microsoft Defender Optimization Cheat Sheet</a></li>
+</ul>
+</body>
+</html>
